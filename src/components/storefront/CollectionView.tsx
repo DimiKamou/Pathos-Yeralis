@@ -9,22 +9,30 @@ export function CollectionView({
   label,
   sub,
   products,
+  top = false,
+  eyebrow = "Collection",
 }: {
   label: string;
   sub?: string;
   products: StoreProduct[];
+  top?: boolean;
+  eyebrow?: string;
 }) {
   return (
     <main className="mx-auto w-full max-w-[1240px] px-8 pb-8 pt-14">
       <nav className="mb-8 text-center text-[11px] font-light tracking-[0.06em] text-mute">
         <a href="/" className="hover:text-ink">Home</a>
         <span className="px-2 text-mute/60">/</span>
-        <a href="/collections" className="hover:text-ink">Collections</a>
-        <span className="px-2 text-mute/60">/</span>
+        {!top && (
+          <>
+            <a href="/collections" className="hover:text-ink">Collections</a>
+            <span className="px-2 text-mute/60">/</span>
+          </>
+        )}
         <span className="text-ink">{label}</span>
       </nav>
       <header className="mb-12 text-center">
-        <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">Collection</div>
+        <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">{eyebrow}</div>
         <h1 className="mt-2 font-serif text-[40px] font-medium leading-tight tracking-[0.02em] text-ink">{label}</h1>
         <p className="mx-auto mt-3 max-w-xl text-[13.5px] font-light leading-relaxed tracking-wide text-mute">
           {sub ?? `${products.length} piece${products.length === 1 ? "" : "s"}, handmade in our Pláka atelier.`}

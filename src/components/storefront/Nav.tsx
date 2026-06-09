@@ -6,6 +6,16 @@ import { useState } from "react";
 import type { MenuItem } from "@/lib/types";
 import { slugify } from "@/lib/slug";
 
+// Where each top-level menu item points. Known items get dedicated pages;
+// any custom page item falls through to a generic /pages/[id] route.
+function menuHref(m: MenuItem): string {
+  if (m.type === "collections") return "/collections";
+  if (m.id === "about") return "/about";
+  if (m.id === "jewelry") return "/shop";
+  if (m.type === "sale") return "/shop";
+  return `/pages/${m.id}`;
+}
+
 export function Nav({ menu, collections }: { menu: MenuItem[]; collections: string[] }) {
   const [open, setOpen] = useState(false);
   const linkCls = "text-[12px] tracking-[0.22em] text-ink/85 hover:text-ink transition-colors";
@@ -34,7 +44,7 @@ export function Nav({ menu, collections }: { menu: MenuItem[]; collections: stri
               )}
             </div>
           ) : (
-            <a key={m.id} href="#" className={linkCls + " flex items-center gap-1.5 uppercase"}>
+            <a key={m.id} href={menuHref(m)} className={linkCls + " flex items-center gap-1.5 uppercase"}>
               {m.type === "sale" && <span className="h-1.5 w-1.5 rounded-full bg-gold"></span>}
               {m.label}
             </a>

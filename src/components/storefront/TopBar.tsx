@@ -11,7 +11,7 @@ import type { StoreProduct } from "@/lib/types";
 
 function Logo() {
   return (
-    <a href="#" className="flex flex-col items-center select-none" aria-label="Pathos home">
+    <a href="/" className="flex flex-col items-center select-none" aria-label="Pathos home">
       <svg width="30" height="24" viewBox="0 0 30 24" fill="none" aria-hidden="true" className="mb-1">
         <path d="M6 2 H24 L28 8 L15 22 L2 8 Z" stroke="#b1894e" strokeWidth="1" strokeLinejoin="round" />
         <path d="M2 8 H28 M11 2 L8 8 L15 22 M19 2 L22 8 L15 22" stroke="#b1894e" strokeWidth="0.8" strokeLinejoin="round" />
