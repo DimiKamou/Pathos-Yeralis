@@ -53,6 +53,10 @@ const SETTINGS: { key: string; value: object }[] = [
     ],
   },
   {
+    key: "collections",
+    value: ["New In", "Aegean", "Gemstones", "Shells & Corals", "Hematite", "Minerals", "Talismans", "Bridal", "Archive"],
+  },
+  {
     key: "popup",
     value: {
       enabled: true,

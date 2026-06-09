@@ -35,7 +35,7 @@ export function Storefront({
         <AnnouncementBar announcement={settings.announcement} season={settings.season} />
         <header>
           <TopBar />
-          <Nav menu={settings.menu} />
+          <Nav menu={settings.menu} collections={settings.collections} />
         </header>
         <main>
           <Hero imageUrl={heroImage} />

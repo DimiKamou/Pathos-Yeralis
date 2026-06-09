@@ -18,6 +18,19 @@ export const DEFAULT_MENU: MenuItem[] = [
   { id: "jewelry", label: "Jewelry & Accessories", type: "page", enabled: true, system: true },
 ];
 
+// Links shown in the "Collections" hover mega-menu — admin-editable.
+export const DEFAULT_COLLECTIONS: string[] = [
+  "New In",
+  "Aegean",
+  "Gemstones",
+  "Shells & Corals",
+  "Hematite",
+  "Minerals",
+  "Talismans",
+  "Bridal",
+  "Archive",
+];
+
 export const DEFAULT_POPUP: PopupSetting = {
   enabled: true,
   heading: "The Summer Edit is here",
@@ -41,6 +54,7 @@ export const DEFAULT_SEASON: SeasonSetting = {
 
 export const DEFAULT_SETTINGS: StoreSettings = {
   menu: DEFAULT_MENU,
+  collections: DEFAULT_COLLECTIONS,
   popup: DEFAULT_POPUP,
   announcement: DEFAULT_ANNOUNCEMENT,
   season: DEFAULT_SEASON,
@@ -79,6 +93,7 @@ export async function getAllSettings(): Promise<StoreSettings> {
   const map = new Map(rows.map((r) => [r.key, parseJson(r.value)]));
   return {
     menu: mergeDefault("menu", map.get("menu")),
+    collections: mergeDefault("collections", map.get("collections")),
     popup: mergeDefault("popup", map.get("popup")),
     announcement: mergeDefault("announcement", map.get("announcement")),
     season: mergeDefault("season", map.get("season")),

@@ -69,6 +69,7 @@ export interface SeasonSetting {
 
 export interface StoreSettings {
   menu: MenuItem[];
+  collections: string[];
   popup: PopupSetting;
   announcement: AnnouncementSetting;
   season: SeasonSetting;
