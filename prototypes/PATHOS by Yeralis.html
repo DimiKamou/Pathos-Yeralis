@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PATHOS · by Yeralis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Jost', 'system-ui', 'sans-serif'],
+          serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        },
+        colors: {
+          ink:   'rgb(var(--c-ink) / <alpha-value>)',
+          mute:  'rgb(var(--c-mute) / <alpha-value>)',
+          steel: 'rgb(var(--c-steel) / <alpha-value>)',
+          gold:  'rgb(var(--c-gold) / <alpha-value>)',
+          sand:  'rgb(var(--c-sand) / <alpha-value>)',
+          paper: 'rgb(var(--c-paper) / <alpha-value>)',
+        },
+      },
+    },
+  };
+</script>
+<style>
+  :root {
+    --c-app: 246 240 230;
+    --c-paper: 255 253 248;
+    --c-ink: 42 36 30;
+    --c-mute: 156 142 124;
+    --c-steel: 171 156 135;
+    --c-gold: 177 137 78;
+    --c-sand: 236 226 210;
+  }
+  html.dark {
+    --c-app: 21 18 15;
+    --c-paper: 38 33 28;
+    --c-ink: 240 233 220;
+    --c-mute: 160 147 129;
+    --c-steel: 150 137 119;
+    --c-gold: 201 158 96;
+    --c-sand: 58 50 42;
+  }
+  html, body { background: rgb(var(--c-app)); }
+  body { -webkit-font-smoothing: antialiased; }
+  /* hide scrollbar on the carousel track */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  /* ── Entry popup motion ── */
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes pathos-swing  { 0%,100% { transform: rotate(-3.5deg); } 50% { transform: rotate(3.5deg); } }
+    @keyframes pathos-floatA { 0%,100% { transform: translateY(0) scale(.6) rotate(-6deg); } 50% { transform: translateY(-14px) scale(.6) rotate(2deg); } }
+    @keyframes pathos-floatB { 0%,100% { transform: translateY(0) scale(.58) rotate(8deg); } 50% { transform: translateY(-10px) scale(.58) rotate(-3deg); } }
+    @keyframes pathos-sheen  { 0% { transform: translateX(-180%) skewX(-16deg); } 60%,100% { transform: translateX(220%) skewX(-16deg); } }
+    .pp-swing  { animation: pathos-swing 4.4s ease-in-out infinite; transform-origin: 50% 5px; }
+    .pp-floatA { animation: pathos-floatA 7s ease-in-out infinite; }
+    .pp-floatB { animation: pathos-floatB 8.6s ease-in-out infinite; }
+    .pp-sheen  { animation: pathos-sheen 6s ease-in-out infinite; }
+  }
+  /* static fallback scale when motion is reduced */
+  @media (prefers-reduced-motion: reduce) { .pp-floatA, .pp-floatB { transform: scale(.6); } }
+</style>
+<script>
+  try { if (localStorage.getItem('pathos.theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}
+</script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="image-slot.js"></script>
+<script src="pathos-store.js"></script>
+<script>
+  /* Apply the saved seasonal accent before paint (and keep it in sync across tabs). */
+  (function () {
+    function applySeason() {
+      try {
+        var s = JSON.parse(localStorage.getItem('pathos.season') || 'null') || {};
+        var SEAS = window.PathosStore && PathosStore.SEASONS;
+        var key = (window.PathosStore && PathosStore.effectiveSeason) ? PathosStore.effectiveSeason(s) : (s.key || 'none');
+        if (key && key !== 'none' && SEAS && SEAS[key]) {
+          document.documentElement.style.setProperty('--c-gold', SEAS[key].rgb);
+        } else {
+          document.documentElement.style.removeProperty('--c-gold');
+        }
+      } catch (e) {}
+    }
+    applySeason();
+    window.addEventListener('storage', applySeason);
+    window.addEventListener('pathos-store', applySeason);
+  })();
+</script>
+</head>
+<body>
+<template id="__bundler_thumbnail">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <rect width="100" height="100" fill="#f6f0e6"/>
+    <g transform="translate(50 38)" fill="none" stroke="#b1894e" stroke-width="2" stroke-linejoin="round">
+      <path d="M-13 -10 H13 L20 -1 L0 19 L-20 -1 Z"/>
+      <path d="M-20 -1 H20 M-6 -10 L-10 -1 L0 19 M6 -10 L10 -1 L0 19" stroke-width="1.4"/>
+    </g>
+    <text x="50" y="74" text-anchor="middle" font-family="Georgia, serif" font-size="13" letter-spacing="3" fill="#2a241e">PATHOS</text>
+  </svg>
+</template>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useRef, useState, useEffect } = React;
+
+/* ───────────────────────── Icons (lucide line set) ───────────────────────── */
+const Svg = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={p.size || 20} height={p.size || 20}
+    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={p.w || 1.4}
+    strokeLinecap="round" strokeLinejoin="round" className={p.className}>{p.children}</svg>
+);
+const SearchIcon = (p) => <Svg {...p}><circle cx="11" cy="11" r="7.5" /><line x1="21" y1="21" x2="16.8" y2="16.8" /></Svg>;
+const UserIcon   = (p) => <Svg {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Svg>;
+const HeartIcon  = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={p.size || 20} height={p.size || 20} viewBox="0 0 24 24"
+    fill={p.filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={p.w || 1.4}
+    strokeLinecap="round" strokeLinejoin="round" className={p.className}>
+    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+  </svg>
+);
+const BagIcon    = (p) => <Svg {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 0 1-8 0" /></Svg>;
+const ChevronL   = (p) => <Svg {...p}><path d="m15 18-6-6 6-6" /></Svg>;
+const ChevronR   = (p) => <Svg {...p}><path d="m9 18 6-6-6-6" /></Svg>;
+const SunIcon    = (p) => <Svg {...p}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></Svg>;
+const MoonIcon   = (p) => <Svg {...p}><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" /></Svg>;
+const MailIcon   = (p) => <Svg {...p}><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m2 7 10 7L22 7" /></Svg>;
+const PhoneIcon  = (p) => <Svg {...p}><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2Z" /></Svg>;
+const PinIcon    = (p) => <Svg {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></Svg>;
+const ClockIcon  = (p) => <Svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Svg>;
+const ChatIcon   = (p) => <Svg {...p}><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.8L3 21l1.9-5.2A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z" /></Svg>;
+const SendIcon   = (p) => <Svg {...p}><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></Svg>;
+const CloseIcon  = (p) => <Svg {...p}><path d="M18 6 6 18M6 6l12 12" /></Svg>;
+const InstaIcon  = (p) => <Svg {...p}><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="3.6" /><circle cx="17.4" cy="6.6" r="1" fill="currentColor" stroke="none" /></Svg>;
+const FbIcon     = (p) => <Svg {...p}><path d="M14 9h3V6h-3a3 3 0 0 0-3 3v2H9v3h2v6h3v-6h2.5l.5-3H14V9.5a.5.5 0 0 1 .5-.5Z" /></Svg>;
+const PinterestIcon = (p) => <Svg {...p}><circle cx="12" cy="12" r="9" /><path d="M9.5 20c-.4-1.4-.3-3 .1-4.5l1.2-5" /><path d="M8.5 10.5a3.6 3.6 0 1 1 5.6 3.5c-1 .8-2.6.6-3.1-.5" /></Svg>;
+const LockIcon   = (p) => <Svg {...p}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></Svg>;
+const CardIcon   = (p) => <Svg {...p}><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /><path d="M6 15h4" /></Svg>;
+const BankIcon   = (p) => <Svg {...p}><path d="M3 21h18" /><path d="M5 21V10M9.5 21V10M14.5 21V10M19 21V10" /><path d="M12 3 21 8H3z" /></Svg>;
+const BellIcon   = (p) => <Svg {...p}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></Svg>;
+const CopyIcon   = (p) => <Svg {...p}><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></Svg>;
+const TruckIcon  = (p) => <Svg {...p}><path d="M1 4h13v12H1z" /><path d="M14 8h4l3 3v5h-7" /><circle cx="6" cy="18" r="1.6" /><circle cx="17" cy="18" r="1.6" /></Svg>;
+const ShieldIcon = (p) => <Svg {...p}><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" /><path d="M9 12l2 2 4-4" /></Svg>;
+const AppleMark  = (p) => (
+  <svg width={p.size || 18} height={p.size || 18} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={p.className}>
+    <path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.1-2.01-3.77-2.04-1.6-.16-3.13.94-3.94.94-.81 0-2.07-.92-3.4-.89-1.75.03-3.36 1.02-4.26 2.58-1.82 3.16-.47 7.83 1.3 10.39.87 1.25 1.9 2.66 3.25 2.61 1.3-.05 1.8-.84 3.37-.84 1.57 0 2.02.84 3.4.81 1.4-.03 2.29-1.27 3.15-2.53.99-1.45 1.4-2.86 1.42-2.93-.03-.01-2.72-1.04-2.75-4.13z" />
+    <path d="M14.6 4.66c.72-.87 1.2-2.08 1.07-3.29-1.03.04-2.28.69-3.02 1.56-.66.77-1.24 2-1.08 3.18 1.15.09 2.32-.58 3.03-1.45z" />
+  </svg>
+);
+const GoogleG    = (p) => (
+  <svg width={p.size || 18} height={p.size || 18} viewBox="0 0 24 24" aria-hidden="true" className={p.className}>
+    <path fill="#4285F4" d="M22 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.6a4.8 4.8 0 0 1-2.1 3.1v2.6h3.4c2-1.8 3.1-4.5 3.1-7.5Z" />
+    <path fill="#34A853" d="M12 23c2.8 0 5.2-.9 6.9-2.5l-3.4-2.6c-.9.6-2.1 1-3.5 1-2.7 0-5-1.8-5.8-4.3H2.7v2.7A10.5 10.5 0 0 0 12 23Z" />
+    <path fill="#FBBC05" d="M6.2 14.6a6.3 6.3 0 0 1 0-4V7.9H2.7a10.5 10.5 0 0 0 0 9.4l3.5-2.7Z" />
+    <path fill="#EA4335" d="M12 5.4c1.5 0 2.9.5 4 1.5l3-3A10.5 10.5 0 0 0 2.7 7.9l3.5 2.7C7 8.1 9.3 5.4 12 5.4Z" />
+  </svg>
+);
+
+/* ───────────────────────── Brand mark ───────────────────────── */
+function Logo() {
+  return (
+    <a href="#" className="flex flex-col items-center select-none" aria-label="Pathos home">
+      <svg width="30" height="24" viewBox="0 0 30 24" fill="none" aria-hidden="true" className="mb-1">
+        <path d="M6 2 H24 L28 8 L15 22 L2 8 Z" stroke="#b1894e" strokeWidth="1" strokeLinejoin="round" />
+        <path d="M2 8 H28 M11 2 L8 8 L15 22 M19 2 L22 8 L15 22" stroke="#b1894e" strokeWidth="0.8" strokeLinejoin="round" />
+      </svg>
+      <span className="font-serif text-[26px] font-medium leading-none tracking-[0.34em] text-ink pl-[0.34em]">PATHOS</span>
+      <span className="mt-1 font-serif text-[12px] italic tracking-[0.12em] text-gold">by Yeralis</span>
+    </a>
+  );
+}
+
+/* ───────────────────────── Product line-art (abstract leather forms) ───────────────────────── */
+const GOLD = '#a9824a';
+const Art = {
+  bracelet: (
+    <svg viewBox="0 0 160 130" className="h-32 w-auto" fill="none" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round">
+      <path d="M20 58 Q80 104 140 58" opacity="0.5" />
+      {Array.from({ length: 11 }).map((_, i) => {
+        const t = i / 10;
+        const x = 20 + t * 120;
+        const y = 58 + Math.sin(Math.PI * t) * 44;
+        return <circle key={i} cx={x} cy={y} r={i === 0 || i === 10 ? 4.5 : 6} fill="#fffdf8" />;
+      })}
+    </svg>
+  ),
+  necklace: (
+    <svg viewBox="0 0 160 130" className="h-32 w-auto" fill="none" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M34 16 C32 58 66 76 80 94 C94 76 128 58 126 16" />
+      <circle cx="80" cy="92" r="3" />
+      <path d="M80 96 l11 9 -11 18 -11 -18 z" />
+      <path d="M69 105 h22" opacity="0.55" />
+    </svg>
+  ),
+  earrings: (
+    <svg viewBox="0 0 160 130" className="h-32 w-auto" fill="none" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      {[56, 104].map((cx) => (
+        <g key={cx}>
+          <circle cx={cx} cy="26" r="6" />
+          <path d={`M${cx} 32 v8`} />
+          <path d={`M${cx} 40 C${cx - 12} 60 ${cx - 12} 84 ${cx} 96 C${cx + 12} 84 ${cx + 12} 60 ${cx} 40 Z`} />
+          <path d={`M${cx} 54 v30`} opacity="0.5" />
+        </g>
+      ))}
+    </svg>
+  ),
+  ring: (
+    <svg viewBox="0 0 160 130" className="h-32 w-auto" fill="none" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="80" cy="86" rx="27" ry="29" />
+      <path d="M80 30 l16 14 -16 18 -16 -18 z" />
+      <path d="M64 44 h32 M80 30 v32" opacity="0.5" />
+    </svg>
+  ),
+  shell: (
+    <svg viewBox="0 0 160 130" className="h-32 w-auto" fill="none" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round">
+      <path d="M106 65 A23 23 0 1 1 59 65 A15.5 15.5 0 1 1 90 65 A9 9 0 1 1 72 65 A4.5 4.5 0 1 1 81 65" />
+      <path d="M106 65 c10 4 16 12 18 22" opacity="0.55" />
+    </svg>
+  ),
+  drop: (
+    <svg viewBox="0 0 160 130" className="h-32 w-auto" fill="none" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M38 16 C40 52 70 66 80 82 C90 66 120 52 122 16" />
+      <circle cx="80" cy="80" r="3" />
+      <path d="M80 84 C67 100 67 118 80 124 C93 118 93 100 80 84 Z" />
+      <path d="M80 94 v24" opacity="0.5" />
+    </svg>
+  ),
+};
+
+/* ───────────────────────── Top bar ───────────────────────── */
+/* ───────────────────────── Shop state (cart + overlays) ───────────────────────── */
+const ShopCtx = React.createContext(null);
+const useShop = () => React.useContext(ShopCtx);
+const CATALOG = (typeof PathosStore !== 'undefined') ? PathosStore.load('products') : [];
+const productById = (id) => CATALOG.find((p) => p.id === id);
+const eur = (n) => '€' + Number(n).toFixed(2);
+function variantsFor(art) {
+  if (art === 'necklace') return { label: 'Length', opts: ['40 cm', '45 cm', '50 cm'] };
+  if (art === 'ring') return { label: 'Ring size', opts: ['50', '52', '54', '56'] };
+  if (art === 'bracelet') return { label: 'Size', opts: ['S', 'M', 'L'] };
+  return null;
+}
+function ArtBox({ k, box = 'h-14 w-14', scale = 'scale-[0.42]' }) {
+  return <div className={`grid ${box} shrink-0 place-items-center overflow-hidden rounded-lg bg-sand/50`}><div className={scale}>{Art[k]}</div></div>;
+}
+function ShopProvider({ children }) {
+  const [items, setItems] = useState(() => { try { return JSON.parse(localStorage.getItem('pathos.cart') || '[]'); } catch (e) { return []; } });
+  const [pdp, setPdp] = useState(null);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkout, setCheckout] = useState(false);
+  const [wish, setWish] = useState(() => { try { return JSON.parse(localStorage.getItem('pathos.wishlist') || '[]'); } catch (e) { return []; } });
+  const [wishOpen, setWishOpen] = useState(false);
+  const [discount, setDiscount] = useState(null);
+  const [query, setQuery] = useState('');
+  useEffect(() => { try { localStorage.setItem('pathos.cart', JSON.stringify(items)); } catch (e) {} }, [items]);
+  useEffect(() => { try { localStorage.setItem('pathos.wishlist', JSON.stringify(wish)); } catch (e) {} }, [wish]);
+  const add = (p, variant, qty = 1) => setItems((prev) => {
+    const key = p.id + '|' + (variant || '');
+    const i = prev.findIndex((x) => x.key === key);
+    if (i >= 0) { const n = prev.slice(); n[i] = { ...n[i], qty: n[i].qty + qty }; return n; }
+    return [...prev, { key, id: p.id, name: p.name, art: p.art, price: p.price, variant: variant || '', qty }];
+  });
+  const setQty = (key, qty) => setItems((prev) => qty <= 0 ? prev.filter((x) => x.key !== key) : prev.map((x) => x.key === key ? { ...x, qty } : x));
+  const remove = (key) => setItems((prev) => prev.filter((x) => x.key !== key));
+  const clear = () => { setItems([]); setDiscount(null); };
+  const count = items.reduce((s, x) => s + x.qty, 0);
+  const subtotal = items.reduce((s, x) => s + x.price * x.qty, 0);
+  // wishlist
+  const toggleWish = (id) => setWish((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  const inWish = (id) => wish.includes(id);
+  const wishCount = wish.length;
+  // discount
+  const applyDiscount = (code) => { const d = PathosStore.checkDiscount(code); if (d) setDiscount(d); return d; };
+  const clearDiscount = () => setDiscount(null);
+  const discountAmount = discount ? +(subtotal * discount.pct).toFixed(2) : 0;
+  const freeShipCode = !!(discount && discount.freeShip);
+  return <ShopCtx.Provider value={{ items, add, setQty, remove, clear, count, subtotal, pdp, setPdp, cartOpen, setCartOpen, checkout, setCheckout, wish, wishOpen, setWishOpen, toggleWish, inWish, wishCount, discount, applyDiscount, clearDiscount, discountAmount, freeShipCode, query, setQuery }}>{children}</ShopCtx.Provider>;
+}
+
+/* ───────────────────────── Top bar ───────────────────────── */
+function ThemeToggle() {
+  const [dark, setDark] = useState(() => { try { return localStorage.getItem('pathos.theme') === 'dark'; } catch (e) { return false; } });
+  const toggle = () => setDark((d) => {
+    const next = !d;
+    document.documentElement.classList.toggle('dark', next);
+    try { localStorage.setItem('pathos.theme', next ? 'dark' : 'light'); } catch (e) {}
+    return next;
+  });
+  return (
+    <button onClick={toggle} aria-label="Toggle theme" className="p-1 text-ink/80 hover:text-ink transition-colors">
+      {dark ? <SunIcon size={19} /> : <MoonIcon size={19} />}
+    </button>
+  );
+}
+function IconBadge({ children, count, onClick }) {
+  return (
+    <button onClick={onClick} className="relative p-1 text-ink/80 hover:text-ink transition-colors">
+      {children}
+      {count != null && count > 0 && (
+        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ink px-[3px] text-[9px] font-medium leading-none text-paper">{count}</span>
+      )}
+    </button>
+  );
+}
+
+function TopBar() {
+  const { count, setCartOpen, wishCount, setWishOpen, query, setQuery, setPdp } = useShop();
+  const [focus, setFocus] = useState(false);
+  const q = query.trim().toLowerCase();
+  const results = q ? CATALOG.filter((p) => p.status === 'Active' && (p.name.toLowerCase().includes(q) || p.collection.toLowerCase().includes(q) || (p.material || '').toLowerCase().includes(q))).slice(0, 6) : [];
+  const openResult = (p) => { setPdp(p); setQuery(''); setFocus(false); };
+  return (
+    <div className="mx-auto grid w-full max-w-[1240px] grid-cols-[1fr_auto_1fr] items-center gap-6 px-8 py-7">
+      {/* search */}
+      <div className="hidden md:block">
+        <div className="relative max-w-[260px]">
+          <div className="flex items-center gap-2 border-b border-ink/20 pb-1.5">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setFocus(true)}
+              onBlur={() => setTimeout(() => setFocus(false), 150)}
+              placeholder="Search anything…"
+              className="w-full bg-transparent text-[13px] font-light tracking-wide text-ink placeholder:text-mute/80 focus:outline-none"
+            />
+            <SearchIcon size={17} className="shrink-0 text-mute" />
+          </div>
+          {focus && q && (
+            <div className="absolute left-0 top-[calc(100%+10px)] z-40 w-[320px] overflow-hidden rounded-xl border border-ink/12 bg-paper py-2 shadow-[0_24px_60px_-24px_rgba(80,60,30,0.4)]">
+              {results.length === 0 ? (
+                <div className="px-4 py-5 text-center text-[12.5px] font-light text-mute">No pieces match “{query.trim()}”</div>
+              ) : results.map((p) => (
+                <button key={p.id} onMouseDown={() => openResult(p)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-ink/[0.03]">
+                  <ArtBox k={p.art} box="h-11 w-11" scale="scale-[0.34]" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] text-ink">{p.name}</span>
+                    <span className="block text-[11px] font-light text-mute">{p.collection}</span>
+                  </span>
+                  <span className="text-[12.5px] font-light text-mute">{eur(p.price)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      {/* logo */}
+      <div className="flex justify-center md:col-start-2">
+        <Logo />
+      </div>
+      {/* account icons */}
+      <div className="col-start-3 flex items-center justify-end gap-5">
+        <ThemeToggle />
+        <IconBadge><UserIcon size={20} /></IconBadge>
+        <IconBadge count={wishCount} onClick={() => setWishOpen(true)}><HeartIcon size={20} /></IconBadge>
+        <IconBadge count={count} onClick={() => setCartOpen(true)}><BagIcon size={20} /></IconBadge>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────── Nav + dropdown ───────────────────────── */
+const COLLECTION_LINKS = ['New In', 'Aegean', 'Gemstones', 'Shells & Corals', 'Hematite', 'Minerals', 'Talismans', 'Bridal', 'Archive'];
+
+function Nav() {
+  const [open, setOpen] = useState(false);
+  const [menu, setMenu] = useState(() => PathosStore.load('menu'));
+  useEffect(() => {
+    const sync = () => setMenu(PathosStore.load('menu'));
+    window.addEventListener('pathos-store', sync);
+    window.addEventListener('storage', sync);
+    return () => { window.removeEventListener('pathos-store', sync); window.removeEventListener('storage', sync); };
+  }, []);
+  const linkCls = 'text-[12px] tracking-[0.22em] text-ink/85 hover:text-ink transition-colors';
+  const items = menu.filter((m) => m.enabled);
+  return (
+    <nav className="border-t border-ink/10">
+      <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-center gap-x-12 gap-y-3 px-8 py-4">
+        {items.map((m) => (
+          m.type === 'collections' ? (
+            <div key={m.id} className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+              <button className={linkCls + ' flex items-center gap-1.5 uppercase'} onClick={() => setOpen((v) => !v)}>{m.label}</button>
+              {open && (
+                <div className="absolute left-1/2 top-[calc(100%+16px)] z-30 w-56 -translate-x-1/2 border border-ink/12 bg-paper py-3 shadow-[0_18px_50px_-24px_rgba(80,60,30,0.35)]">
+                  <ul className="flex flex-col">
+                    {COLLECTION_LINKS.map((l) => (
+                      <li key={l}><a href="#" className="block px-6 py-[9px] text-[12.5px] font-light tracking-[0.06em] text-steel hover:bg-ink/[0.03] hover:text-ink/80 transition-colors">{l}</a></li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <a key={m.id} href="#" className={linkCls + ' flex items-center gap-1.5 uppercase'}>
+              {m.type === 'sale' && <span className="h-1.5 w-1.5 rounded-full bg-gold"></span>}
+              {m.label}
+            </a>
+          )
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+/* ───────────────────────── Hero ───────────────────────── */
+function Hero() {
+  return (
+    <section className="mx-auto w-full max-w-[1240px] px-8 pt-10">
+      <image-slot
+        id="hero-banner"
+        shape="rect"
+        fit="cover"
+        placeholder="Drop an Aegean editorial banner image"
+        style={{ width: '100%', height: '440px', display: 'block' }}
+      ></image-slot>
+    </section>
+  );
+}
+
+/* ───────────────────────── Shop by Collection ───────────────────────── */
+function CollectionCard({ tone, eyebrow, label, motif }) {
+  const dark = tone === 'dark';
+  return (
+    <a href="#" className={`group relative block aspect-[5/4] overflow-hidden ${dark ? 'bg-[#2b2620]' : 'bg-sand'}`}>
+      {/* faint product motif */}
+      <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${dark ? 'opacity-25' : 'opacity-40'}`}>
+        {motif}
+      </div>
+      <div className="absolute left-7 top-7">
+        <div className={`font-serif text-[28px] font-medium tracking-[0.06em] ${dark ? 'text-[#f3ead9]' : 'text-ink'}`}>{eyebrow}</div>
+        <div className={`mt-1 text-[13px] font-light tracking-wide ${dark ? 'text-white/70' : 'text-ink/55'}`}>{label}</div>
+      </div>
+      <span className={`absolute bottom-7 left-7 text-[11px] tracking-[0.25em] ${dark ? 'text-white/0 group-hover:text-white/80' : 'text-ink/0 group-hover:text-ink/70'} transition-colors`}>VIEW →</span>
+    </a>
+  );
+}
+
+function ShopByCollection() {
+  const beadsMotif = (light) => (
+    <svg viewBox="0 0 320 240" className="h-3/5 w-auto" fill="none" stroke={light ? GOLD : '#e7d9bf'} strokeWidth="2" strokeLinecap="round">
+      <path d="M30 96 Q160 168 290 96" opacity="0.5" />
+      {Array.from({ length: 13 }).map((_, i) => {
+        const t = i / 12;
+        const x = 30 + t * 260;
+        const y = 96 + Math.sin(Math.PI * t) * 70;
+        return <circle key={i} cx={x} cy={y} r={i % 2 ? 11 : 8} />;
+      })}
+    </svg>
+  );
+  const gemMotif = (
+    <svg viewBox="0 0 240 300" className="h-3/5 w-auto" fill="none" stroke="#e7d9bf" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M120 40 l44 38 -44 150 -44 -150 z" />
+      <path d="M76 78 h88 M120 40 v188 M98 78 l22 150 M142 78 l-22 150" opacity="0.55" />
+    </svg>
+  );
+  return (
+    <section className="mx-auto w-full max-w-[1240px] px-8 pb-4 pt-24">
+      <header className="mb-12 text-center">
+        <h2 className="font-serif text-[40px] font-medium leading-tight tracking-[0.02em] text-ink">Explore the Collections</h2>
+        <p className="mx-auto mt-3 max-w-xl text-[13.5px] font-light leading-relaxed tracking-wide text-mute">
+          Soulful, handmade jewelry inspired by the Aegean &mdash; gemstones, shells &amp; minerals drawn from the natural beauty of the earth.
+        </p>
+      </header>
+      <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
+        <CollectionCard tone="light" eyebrow="Aegean" label="Shop the Sea Collection" motif={beadsMotif(true)} />
+        <CollectionCard tone="dark" eyebrow="Hematite" label="Shop Hematite" motif={gemMotif} />
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────────── Product carousel ───────────────────────── */
+function Swatches({ colors }) {
+  return (
+    <div className="mt-3 flex items-center gap-1.5">
+      {colors.map((c, i) => (
+        <span key={i} className="h-3 w-3 rounded-full ring-1 ring-ink/15" style={{ background: c }} />
+      ))}
+    </div>
+  );
+}
+
+function ProductCard({ p }) {
+  const { setPdp, toggleWish, inWish } = useShop();
+  const sold = p.stock === 0;
+  const saved = inWish(p.id);
+  return (
+    <div className="group w-[200px] shrink-0">
+      <button onClick={() => setPdp(p)} className="relative flex h-[210px] w-full items-center justify-center bg-paper">
+        {sold && <span className="absolute right-2 top-2 bg-[#d8cdba] px-2 py-[3px] text-[10px] font-medium tracking-wide text-[#6b5f4d]">Sold Out</span>}
+        <span className="transition-transform duration-300 group-hover:scale-105">{Art[p.art]}</span>
+      </button>
+      <div className="mt-3 flex items-start justify-between">
+        <button onClick={() => setPdp(p)} className="text-left text-[13px] tracking-wide text-ink transition-colors hover:text-gold">{p.name}</button>
+        <button onClick={() => toggleWish(p.id)} aria-label={saved ? 'Remove from wishlist' : 'Save to wishlist'}
+          className={`mt-0.5 transition-colors ${saved ? 'text-gold' : 'text-mute hover:text-ink'}`}><HeartIcon size={15} filled={saved} /></button>
+      </div>
+      <div className="mt-1 text-[12.5px] font-light tracking-wide text-mute">{eur(p.price)}</div>
+      <Swatches colors={p.swatches} />
+    </div>
+  );
+}
+
+function Carousel() {
+  const trackRef = useRef(null);
+  const active = CATALOG.filter((p) => p.status === 'Active');
+  const scrollBy = (dir) => {
+    const el = trackRef.current;
+    if (el) el.scrollBy({ left: dir * 460, behavior: 'smooth' });
+  };
+  return (
+    <section className="mx-auto w-full max-w-[1240px] px-8 pb-8 pt-24">
+      <h2 className="mb-12 text-center font-serif text-[28px] font-medium tracking-[0.12em] text-ink">Handmade Favorites</h2>
+      <div className="relative">
+        <button onClick={() => scrollBy(-1)} aria-label="Previous"
+          className="absolute -left-2 top-[100px] z-10 -translate-y-1/2 text-ink/40 hover:text-ink transition-colors">
+          <ChevronL size={30} w={1.2} />
+        </button>
+        <button onClick={() => scrollBy(1)} aria-label="Next"
+          className="absolute -right-2 top-[100px] z-10 -translate-y-1/2 text-ink/40 hover:text-ink transition-colors">
+          <ChevronR size={30} w={1.2} />
+        </button>
+        <div ref={trackRef} className="no-scrollbar flex gap-8 overflow-x-auto scroll-smooth px-6 pb-2">
+          {active.map((p) => <ProductCard key={p.id} p={p} />)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────────── Footer promo ───────────────────────── */
+function Promo() {
+  return (
+    <section className="mx-auto w-full max-w-[1240px] px-8 pb-16 pt-10">
+      <div className="flex items-center gap-7">
+        <span className="h-px flex-1 bg-ink/15" />
+        <span className="text-center text-[12.5px] font-medium tracking-[0.22em] text-ink">FREE SHIPPING ACROSS GREECE &amp; THE EU FOR ORDERS ABOVE 100€</span>
+        <span className="h-px flex-1 bg-ink/15" />
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────────── Announcement bar (admin-controlled) ───────────────────────── */
+function AnnouncementBar() {
+  const [a, setA] = useState(() => PathosStore.load('announcement'));
+  const [s, setS] = useState(() => PathosStore.load('season'));
+  useEffect(() => {
+    const sync = () => { setA(PathosStore.load('announcement')); setS(PathosStore.load('season')); };
+    window.addEventListener('pathos-store', sync);
+    window.addEventListener('storage', sync);
+    return () => { window.removeEventListener('pathos-store', sync); window.removeEventListener('storage', sync); };
+  }, []);
+  const season = PathosStore.SEASONS[PathosStore.effectiveSeason(s)] || PathosStore.SEASONS.none;
+  const active = PathosStore.effectiveSeason(s) !== 'none';
+  const text = (active && s.useGreeting && season.greeting) ? season.greeting : (a.enabled ? a.text : '');
+  if (!text) return null;
+  const motif = active ? <span className="opacity-80" dangerouslySetInnerHTML={{ __html: PathosStore.seasonMotif(season.motif, 13, 'currentColor') }} /> : null;
+  return (
+    <div className="flex items-center justify-center gap-3 bg-[#2a241e] px-4 py-2.5 text-center text-[11px] font-medium leading-snug tracking-[0.18em] text-[#f3ead9]">
+      {motif}<span>{text}</span>{motif}
+    </div>
+  );
+}
+
+/* ───────────────────────── Entry popup (admin-controlled) ───────────────────────── */
+function EntryPopup() {
+  const [p] = useState(() => PathosStore.load('popup'));
+  const [show, setShow] = useState(false);
+  const [entered, setEntered] = useState(false);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!p.enabled) return;
+    if (p.frequency === 'session' && sessionStorage.getItem('pathos.popupSeen')) return;
+    const t = setTimeout(() => setShow(true), Math.max(0, (p.delay || 0) * 1000));
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => { if (show) { const r = setTimeout(() => setEntered(true), 30); return () => clearTimeout(r); } }, [show]);
+  const close = () => { setShow(false); try { sessionStorage.setItem('pathos.popupSeen', '1'); } catch (e) {} };
+  const copy = () => { try { navigator.clipboard.writeText(p.code); } catch (e) {} setCopied(true); };
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-5">
+      <div className={`absolute inset-0 bg-black/55 backdrop-blur-[2px] transition-opacity duration-300 ${entered ? 'opacity-100' : 'opacity-0'}`} onClick={close}></div>
+      <div className={`relative w-full max-w-md overflow-hidden rounded-[20px] bg-[#2a241e] p-9 text-center shadow-2xl ring-1 ring-gold/15 transition-all duration-500 ease-[cubic-bezier(.16,.84,.44,1)] motion-reduce:transition-none ${entered ? 'opacity-100 translate-y-0 scale-100' : 'translate-y-4 scale-95 opacity-0'}`}>
+        {/* layered ambience */}
+        <div className="pointer-events-none absolute inset-0 opacity-25" style={{ background: 'radial-gradient(125% 85% at 50% -5%, rgba(201,158,96,.6), transparent 62%)' }}></div>
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div className="pp-sheen absolute -inset-y-6 left-0 w-1/3" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,158,96,.13), transparent)' }}></div>
+        </div>
+        {/* drifting line-art jewelry */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div className="pp-floatA absolute -left-10 top-6 opacity-[0.13]">{Art.ring}</div>
+          <div className="pp-floatB absolute -right-12 top-1 opacity-[0.12]">{Art.drop}</div>
+          <div className="pp-floatA absolute -right-8 -bottom-4 opacity-[0.11]" style={{ animationDelay: '1.6s' }}>{Art.shell}</div>
+          <div className="pp-floatB absolute -left-8 -bottom-6 opacity-[0.10]" style={{ animationDelay: '2.4s' }}>{Art.bracelet}</div>
+        </div>
+
+        <button onClick={close} className="absolute right-4 top-4 z-10 text-[#f3ead9]/50 hover:text-[#f3ead9]" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+
+        <div className="relative">
+          <div className="text-[10px] font-medium uppercase tracking-[0.34em] text-gold">PATHOS · by Yeralis</div>
+          <div className="mx-auto mt-3 mb-1 flex items-center justify-center gap-2 text-gold/70">
+            <span className="h-px w-9 bg-gold/35"></span>
+            <span className="text-[7px] leading-none">◆</span>
+            <span className="h-px w-9 bg-gold/35"></span>
+          </div>
+          <h3 className="font-serif text-[32px] font-medium leading-tight text-[#f3ead9]">{p.heading}</h3>
+          <p className="mx-auto mt-3 max-w-xs text-[13.5px] font-light leading-relaxed text-[#f3ead9]/75">{p.message}</p>
+
+          {p.code && (
+            <div className="relative mx-auto mt-7 w-fit">
+              {/* jump ring the tag hangs from */}
+              <div className="mx-auto h-3.5 w-3.5 rounded-full border-[1.5px] border-gold/80"></div>
+              <button onClick={copy} title="Tap to copy"
+                className="pp-swing group relative -mt-[3px] block px-10 pb-4 pt-5 shadow-[0_12px_24px_-12px_rgba(0,0,0,.7)] transition-transform active:scale-[.98]"
+                style={{ background: 'linear-gradient(155deg,#f3ead9,#e2d4ba)', clipPath: 'polygon(50% 0, 100% 14%, 100% 100%, 0 100%, 0 14%)' }}>
+                {/* punched hole showing the dark card behind */}
+                <span className="absolute left-1/2 top-[9px] h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-[#2a241e] ring-1 ring-black/20"></span>
+                <span className="mt-3 block text-[9px] font-semibold uppercase tracking-[0.3em] text-[#9a7b46]">Welcome gift</span>
+                <span className="mt-1.5 block font-mono text-[20px] font-medium tracking-[0.26em] text-[#2a241e]">{copied ? 'Copied ✓' : p.code}</span>
+                <span className="mt-1 block text-[9px] uppercase tracking-[0.18em] text-[#2a241e]/45">{copied ? 'applied at checkout' : 'tap to copy'}</span>
+              </button>
+            </div>
+          )}
+
+          <button onClick={close} className="mt-7 whitespace-nowrap rounded-full bg-gold px-9 py-3 text-[12.5px] font-medium tracking-wide text-white shadow-lg shadow-gold/20 transition-colors hover:bg-gold/90">{p.button}</button>
+          <button onClick={close} className="mt-3 block w-full text-[11px] tracking-wide text-[#f3ead9]/45 hover:text-[#f3ead9]/70">No thanks</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────── Visit us (map) ───────────────────────── */
+function InfoRow({ icon, label, children }) {
+  return (
+    <div className="flex gap-3.5">
+      <span className="mt-0.5 text-gold">{icon}</span>
+      <div>
+        <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-mute">{label}</div>
+        <div className="mt-1 text-[14px] font-light leading-relaxed text-ink">{children}</div>
+      </div>
+    </div>
+  );
+}
+function VisitUs() {
+  return (
+    <section id="visit" className="mx-auto w-full max-w-[1240px] px-8 pt-28">
+      <header className="mb-10 text-center">
+        <h2 className="font-serif text-[34px] font-medium tracking-[0.02em] text-ink">Visit the Atelier</h2>
+        <p className="mx-auto mt-3 max-w-md text-[13.5px] font-light leading-relaxed text-mute">Find us in the heart of Pláka — come try on the pieces and meet the maker.</p>
+      </header>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.55fr_1fr]">
+        <div className="relative overflow-hidden rounded-xl border border-ink/10 bg-sand/40">
+          {/* stylized fallback shown if the live map can't load */}
+          <div className="absolute inset-0">
+            <svg className="h-full w-full" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <rect width="600" height="420" fill="rgb(var(--c-sand))" />
+              <g stroke="rgb(var(--c-ink) / 0.10)" strokeWidth="2" fill="none">
+                <path d="M-20 110 H620 M-20 250 H620 M-20 340 H620" />
+                <path d="M120 -20 V440 M300 -20 V440 M450 -20 V440" />
+                <path d="M-20 60 L260 440 M340 -20 L640 300" strokeWidth="6" stroke="rgb(var(--c-ink) / 0.07)" />
+              </g>
+              <g fill="rgb(var(--c-ink) / 0.05)"><rect x="140" y="130" width="140" height="100" rx="4"/><rect x="320" y="270" width="110" height="60" rx="4"/><rect x="40" y="270" width="60" height="60" rx="4"/></g>
+            </svg>
+            <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+              <span className="relative flex h-4 w-4"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold/50"></span><span className="relative inline-flex h-4 w-4 rounded-full bg-gold ring-4 ring-paper"></span></span>
+              <span className="mt-2 rounded-full bg-paper px-3 py-1 text-[11px] font-medium tracking-wide text-ink shadow-sm">12 Adrianou St · Pláka</span>
+            </div>
+          </div>
+          <iframe title="PATHOS atelier location" className="relative block h-[300px] w-full lg:h-[420px]" loading="lazy"
+            src="https://www.openstreetmap.org/export/embed.html?bbox=23.7188%2C37.9676%2C23.7352%2C37.9756&layer=mapnik&marker=37.9716%2C23.7270"
+            style={{ border: 0, filter: 'grayscale(0.25) sepia(0.12)', background: 'transparent' }}></iframe>
+        </div>
+        <div className="flex flex-col justify-center gap-7 rounded-xl border border-ink/10 bg-paper p-8 lg:p-9">
+          <InfoRow icon={<PinIcon size={19} />} label="Atelier &amp; Showroom">12 Adrianou Street<br />Pláka, Athens 105 56, Greece</InfoRow>
+          <InfoRow icon={<ClockIcon size={19} />} label="Opening hours">Mon–Sat · 10:00–19:00<br />Sun · by appointment</InfoRow>
+          <InfoRow icon={<PhoneIcon size={18} />} label="Call us">+30 210 322 1180</InfoRow>
+          <InfoRow icon={<MailIcon size={18} />} label="Email">hello@pathos-jewelry.com</InfoRow>
+          <a href="https://www.openstreetmap.org/?mlat=37.9716&mlon=23.7270#map=17/37.9716/23.7270" target="_blank" rel="noopener"
+            className="mt-1 inline-flex w-fit items-center gap-2 border-b border-gold pb-1 text-[12px] font-medium uppercase tracking-[0.18em] text-gold transition-colors hover:text-ink hover:border-ink">
+            Get directions →
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────────── Footer ───────────────────────── */
+function FooterCol({ title, links }) {
+  return (
+    <div>
+      <h4 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-gold">{title}</h4>
+      <ul className="flex flex-col gap-2.5">
+        {links.map((l) => <li key={l}><a href="#" className="text-[13px] font-light tracking-wide text-[#e9dcc6]/75 transition-colors hover:text-[#f3ead9]">{l}</a></li>)}
+      </ul>
+    </div>
+  );
+}
+function SiteFooter() {
+  const [email, setEmail] = useState('');
+  const [done, setDone] = useState(false);
+  const subscribe = () => { if (!email.includes('@')) return; PathosStore.pushSubscriber({ email, source: 'Footer' }); setDone(true); setEmail(''); };
+  const Social = ({ href, children, label }) => (
+    <a href={href} target="_blank" rel="noopener" aria-label={label}
+      className="flex h-9 w-9 items-center justify-center rounded-full border border-[#f3ead9]/20 text-[#e9dcc6]/80 transition-colors hover:border-gold hover:text-gold">{children}</a>
+  );
+  return (
+    <footer className="mt-28 bg-[#241f1a] text-[#f3ead9]">
+      <div className="mx-auto w-full max-w-[1240px] px-8 py-16">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1.4fr]">
+          {/* brand */}
+          <div className="col-span-2 md:col-span-3 lg:col-span-1">
+            <div className="flex items-center gap-2.5">
+              <svg width="26" height="21" viewBox="0 0 30 24" fill="none"><path d="M6 2 H24 L28 8 L15 22 L2 8 Z" stroke="#b1894e" strokeWidth="1.1" strokeLinejoin="round" /><path d="M2 8 H28 M11 2 L8 8 L15 22 M19 2 L22 8 L15 22" stroke="#b1894e" strokeWidth="0.8" /></svg>
+              <div className="leading-none"><div className="font-serif text-[19px] font-medium tracking-[0.22em]">PATHOS</div><div className="mt-1 font-serif text-[11px] italic tracking-wide text-gold">by Yeralis</div></div>
+            </div>
+            <p className="mt-5 max-w-xs text-[13px] font-light leading-relaxed text-[#e9dcc6]/70">Handmade jewelry from the Aegean — gemstones, shells and minerals shaped into pieces made to last a lifetime.</p>
+            <div className="mt-6 flex gap-2.5">
+              <Social href="https://www.instagram.com/pathos_by_yeralis/" label="Instagram"><InstaIcon size={17} /></Social>
+              <Social href="#" label="Facebook"><FbIcon size={17} /></Social>
+              <Social href="#" label="Pinterest"><PinterestIcon size={17} /></Social>
+              <Social href="mailto:hello@pathos-jewelry.com" label="Email"><MailIcon size={17} /></Social>
+            </div>
+          </div>
+          <FooterCol title="Shop" links={['New In', 'Bestsellers', 'Collections', 'Gift Cards', 'Sale']} />
+          <FooterCol title="About" links={['Our Story', 'The Atelier', 'Sustainability', 'Journal', 'Stockists']} />
+          <FooterCol title="Help" links={['Contact Us', 'Shipping & Returns', 'Care Guide', 'Size Guide', 'FAQ']} />
+          {/* newsletter */}
+          <div className="col-span-2 md:col-span-3 lg:col-span-1">
+            <h4 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-gold">Join the list</h4>
+            <p className="mb-4 text-[13px] font-light leading-relaxed text-[#e9dcc6]/70">New collections, private previews and 15% off your first order.</p>
+            {done ? (
+              <div className="flex items-center gap-2 text-[13px] font-light text-gold"><span>✓</span> Thank you — you're on the list.</div>
+            ) : (
+              <div className="flex items-center border-b border-[#f3ead9]/25 pb-2">
+                <input value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && subscribe()} placeholder="Your email"
+                  className="w-full bg-transparent text-[13px] font-light text-[#f3ead9] placeholder:text-[#e9dcc6]/40 focus:outline-none" />
+                <button onClick={subscribe} className="shrink-0 pl-3 text-gold transition-colors hover:text-[#f3ead9]"><SendIcon size={16} /></button>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="mt-14 flex flex-col items-center justify-between gap-3 border-t border-[#f3ead9]/12 pt-7 text-[11.5px] font-light tracking-wide text-[#e9dcc6]/55 sm:flex-row">
+          <div>© 2026 PATHOS by Yeralis · Athens, Greece</div>
+          <div className="flex gap-5"><a href="#" className="hover:text-[#f3ead9]">Terms</a><a href="#" className="hover:text-[#f3ead9]">Privacy</a><a href="#" className="hover:text-[#f3ead9]">Cookies</a></div>
+          <div>Secure payments · Visa · Mastercard · PayPal</div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* ───────────────────────── Chat widget (questions → admin inbox) ───────────────────────── */
+function ChatWidget() {
+  const [open, setOpen] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', topic: 'General', message: '' });
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const submit = () => {
+    if (!form.email.includes('@') || form.message.trim().length < 2) return;
+    PathosStore.pushMessage(form);
+    setSent(true);
+  };
+  const reset = () => { setForm({ name: '', email: '', topic: 'General', message: '' }); setSent(false); };
+  const field = 'w-full rounded-lg border border-ink/15 bg-paper px-3 py-2.5 text-[13px] text-ink placeholder:text-mute focus:border-gold focus:outline-none';
+  return (
+    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3">
+      {open && (
+        <div className="w-[330px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border border-ink/10 bg-paper shadow-[0_24px_60px_-20px_rgba(40,30,15,0.45)]">
+          <div className="flex items-center justify-between bg-[#2a241e] px-5 py-4">
+            <div>
+              <div className="font-serif text-[17px] font-medium text-[#f3ead9]">Questions? Ask us</div>
+              <div className="mt-0.5 text-[11px] font-light text-[#e9dcc6]/65">We reply by email within 24 hours.</div>
+            </div>
+            <button onClick={() => setOpen(false)} className="text-[#f3ead9]/55 hover:text-[#f3ead9]" aria-label="Close chat"><CloseIcon size={18} /></button>
+          </div>
+          {sent ? (
+            <div className="px-5 py-8 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/15 text-gold"><MailIcon size={22} /></div>
+              <div className="font-serif text-[20px] font-medium text-ink">Message sent</div>
+              <p className="mx-auto mt-2 max-w-[16rem] text-[13px] font-light leading-relaxed text-mute">Thanks{form.name ? ', ' + form.name.split(' ')[0] : ''}! We've logged your question and a copy has gone to our team — we'll reply to <span className="text-ink">{form.email}</span> shortly.</p>
+              <button onClick={reset} className="mt-5 text-[12px] font-medium uppercase tracking-[0.16em] text-gold hover:text-ink">Ask another →</button>
+            </div>
+          ) : (
+            <div className="space-y-3 p-5">
+              <div className="grid grid-cols-2 gap-3">
+                <input className={field} placeholder="Name" value={form.name} onChange={(e) => set('name', e.target.value)} />
+                <select className={field} value={form.topic} onChange={(e) => set('topic', e.target.value)}>
+                  {['General', 'Order', 'Sizing', 'Custom piece', 'Wholesale'].map((t) => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+              <input className={field} placeholder="Email *" value={form.email} onChange={(e) => set('email', e.target.value)} />
+              <textarea className={field + ' resize-none'} rows={3} placeholder="How can we help? *" value={form.message} onChange={(e) => set('message', e.target.value)}></textarea>
+              <button onClick={submit} className="flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-gold py-2.5 text-[12.5px] font-medium tracking-wide text-white transition-colors hover:bg-gold/90"><SendIcon size={15} />Send message</button>
+              <p className="text-center text-[11px] font-light text-mute">Prefer email? <a href="mailto:hello@pathos-jewelry.com" className="text-gold hover:underline">hello@pathos-jewelry.com</a></p>
+            </div>
+          )}
+        </div>
+      )}
+      <button onClick={() => setOpen((v) => !v)} aria-label="Open chat"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-gold text-white shadow-[0_12px_30px_-8px_rgba(177,137,78,0.7)] transition-transform hover:scale-105">
+        {open ? <CloseIcon size={22} /> : <ChatIcon size={24} />}
+      </button>
+    </div>
+  );
+}
+
+/* ───────────────────────── Product detail modal ───────────────────────── */
+function PDPModal() {
+  const { pdp, setPdp, add, setCartOpen, toggleWish, inWish } = useShop();
+  const [variant, setVariant] = useState('');
+  const [qty, setQty] = useState(1);
+  useEffect(() => { if (pdp) { const v = variantsFor(pdp.art); setVariant(v ? v.opts[0] : ''); setQty(1); } }, [pdp]);
+  if (!pdp) return null;
+  const v = variantsFor(pdp.art);
+  const sold = pdp.stock === 0;
+  const saved = inWish(pdp.id);
+  const addToCart = () => { add(pdp, variant, qty); setPdp(null); setCartOpen(true); };
+  const related = CATALOG.filter((p) => p.status === 'Active' && p.collection === pdp.collection && p.id !== pdp.id).slice(0, 3);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-5">
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" onClick={() => setPdp(null)}></div>
+      <div className="relative grid max-h-[92vh] w-full max-w-3xl grid-cols-1 overflow-hidden rounded-2xl bg-paper shadow-2xl md:grid-cols-2">
+        <button onClick={() => setPdp(null)} className="absolute right-3 top-3 z-10 rounded-full bg-paper/70 p-2 text-ink/60 hover:text-ink" aria-label="Close"><CloseIcon size={18} /></button>
+        <div className="relative flex items-center justify-center bg-sand/40 p-10">
+          <div className="scale-[1.55]">{Art[pdp.art]}</div>
+          <button onClick={() => toggleWish(pdp.id)} aria-label={saved ? 'Remove from saved' : 'Save piece'}
+            className={`absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-paper/80 shadow-sm transition-colors ${saved ? 'text-gold' : 'text-ink/55 hover:text-ink'}`}><HeartIcon size={17} filled={saved} /></button>
+        </div>
+        <div className="overflow-y-auto p-8">
+          <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">{pdp.collection}</div>
+          <h3 className="mt-2 font-serif text-[30px] font-medium leading-tight text-ink">{pdp.name}</h3>
+          <div className="mt-2 text-[18px] font-light text-ink">{eur(pdp.price)}</div>
+          <p className="mt-4 text-[13.5px] font-light leading-relaxed text-mute">{pdp.desc}</p>
+          <div className="mt-3 text-[12px] tracking-wide text-mute">{pdp.material}</div>
+          <Swatches colors={pdp.swatches} />
+          {v && !sold && (
+            <div className="mt-5">
+              <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-mute">{v.label}</div>
+              <div className="flex flex-wrap gap-2">
+                {v.opts.map((o) => (
+                  <button key={o} onClick={() => setVariant(o)} className={`rounded-full border px-3.5 py-1.5 text-[12px] tracking-wide transition-colors ${variant === o ? 'border-gold bg-gold/10 text-gold' : 'border-ink/20 text-ink/70 hover:border-ink/40'}`}>{o}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {sold ? (
+            <NotifyForm />
+          ) : (
+            <>
+              <div className="mt-6 flex items-center gap-5">
+                <div className="flex items-center rounded-full border border-ink/20">
+                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="px-3 py-1.5 text-ink/70 hover:text-ink">−</button>
+                  <span className="w-8 text-center text-[13px] text-ink">{qty}</span>
+                  <button onClick={() => setQty((q) => q + 1)} className="px-3 py-1.5 text-ink/70 hover:text-ink">+</button>
+                </div>
+                <span className="text-[12px] text-mute">{pdp.stock + ' in stock'}</span>
+              </div>
+              <button onClick={addToCart}
+                className="mt-6 flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-ink py-3.5 text-[12.5px] font-medium uppercase tracking-[0.16em] text-paper transition-colors hover:bg-ink/90">
+                Add to cart — {eur(pdp.price * qty)}
+              </button>
+            </>
+          )}
+          <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-light tracking-wide text-mute"><TruckIcon size={14} className="text-gold" /> Free EU shipping over €100 · 30-day returns</div>
+          {related.length > 0 && (
+            <div className="mt-7 border-t border-ink/10 pt-5">
+              <div className="mb-3 text-[11px] font-medium uppercase tracking-[0.16em] text-mute">You may also like</div>
+              <div className="grid grid-cols-3 gap-3">
+                {related.map((r) => (
+                  <button key={r.id} onClick={() => setPdp(r)} className="group text-left">
+                    <span className="block"><ArtBox k={r.art} box="h-20 w-full" scale="scale-[0.5]" /></span>
+                    <span className="mt-1.5 block truncate text-[11.5px] text-ink transition-colors group-hover:text-gold">{r.name}</span>
+                    <span className="block text-[11px] font-light text-mute">{eur(r.price)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────── Discount code field (shared) ───────────────────────── */
+function DiscountField({ dark }) {
+  const { discount, applyDiscount, clearDiscount } = useShop();
+  const [code, setCode] = useState('');
+  const [err, setErr] = useState('');
+  const apply = () => { if (!code.trim()) return; const d = applyDiscount(code); if (!d) setErr('That code isn\u2019t valid'); else { setErr(''); setCode(''); } };
+  if (discount) {
+    return (
+      <div className="flex items-center justify-between rounded-lg bg-gold/12 px-3 py-2.5 text-[12.5px]">
+        <span className="flex items-center gap-2 text-ink"><span className="rounded bg-gold/20 px-1.5 py-0.5 font-mono text-[11px] tracking-wide text-gold">{discount.code}</span>{discount.label} applied</span>
+        <button onClick={clearDiscount} className="text-[11.5px] text-mute hover:text-ink">Remove</button>
+      </div>
+    );
+  }
+  const inputCls = `w-full rounded-lg border px-3 py-2.5 text-[13px] uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal focus:outline-none ${dark ? 'border-[#f3ead9]/25 bg-transparent text-[#f3ead9] placeholder:text-[#e9dcc6]/40 focus:border-gold' : 'border-ink/15 bg-paper text-ink placeholder:text-mute focus:border-gold'}`;
+  return (
+    <div>
+      <div className="flex gap-2">
+        <input value={code} onChange={(e) => { setCode(e.target.value); setErr(''); }} onKeyDown={(e) => e.key === 'Enter' && apply()} placeholder="Discount code" className={inputCls} />
+        <button onClick={apply} className="shrink-0 rounded-lg border border-ink/20 px-4 text-[12px] font-medium uppercase tracking-[0.12em] text-ink/80 transition-colors hover:border-ink hover:text-ink">Apply</button>
+      </div>
+      {err && <div className="mt-1.5 text-[11px] text-rose-500">{err}</div>}
+    </div>
+  );
+}
+
+/* ───────────────────────── Notify-me (back-in-stock) ───────────────────────── */
+function NotifyForm() {
+  const [email, setEmail] = useState('');
+  const [done, setDone] = useState(false);
+  const submit = () => { if (!email.includes('@')) return; PathosStore.pushSubscriber({ email, source: 'Back-in-stock' }); setDone(true); };
+  if (done) return (
+    <div className="mt-6 flex items-center justify-center gap-2 rounded-full bg-gold/12 py-3.5 text-[12.5px] font-light text-gold"><BellIcon size={16} /> We\u2019ll email you the moment it\u2019s back.</div>
+  );
+  return (
+    <div className="mt-6">
+      <div className="mb-2 flex items-center gap-2 text-[12px] font-medium text-ink"><BellIcon size={16} className="text-gold" /> Notify me when it\u2019s back in stock</div>
+      <div className="flex items-center gap-2 rounded-full border border-ink/20 py-1 pl-4 pr-1">
+        <input value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} placeholder="Your email" className="w-full bg-transparent text-[13px] font-light text-ink placeholder:text-mute focus:outline-none" />
+        <button onClick={submit} className="shrink-0 rounded-full bg-ink px-5 py-2.5 text-[11.5px] font-medium uppercase tracking-[0.14em] text-paper transition-colors hover:bg-ink/90">Notify me</button>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────── Wishlist drawer ───────────────────────── */
+function WishDrawer() {
+  const { wish, wishOpen, setWishOpen, toggleWish, setPdp } = useShop();
+  if (!wishOpen) return null;
+  const saved = wish.map(productById).filter(Boolean);
+  const openPdp = (p) => { setWishOpen(false); setPdp(p); };
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px]" onClick={() => setWishOpen(false)}></div>
+      <aside className="relative z-10 flex h-full w-full max-w-md flex-col bg-paper shadow-2xl">
+        <div className="flex items-center justify-between border-b border-ink/10 px-6 py-5">
+          <h3 className="font-serif text-[22px] font-medium text-ink">Saved pieces {saved.length > 0 && <span className="text-mute">({saved.length})</span>}</h3>
+          <button onClick={() => setWishOpen(false)} className="rounded-lg p-2 text-mute hover:bg-ink/5 hover:text-ink"><CloseIcon size={18} /></button>
+        </div>
+        {saved.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+            <div className="mb-4 text-mute"><HeartIcon size={40} /></div>
+            <div className="font-serif text-[20px] text-ink">Nothing saved yet</div>
+            <p className="mt-2 text-[13px] font-light text-mute">Tap the heart on any piece to keep it here for later.</p>
+            <button onClick={() => setWishOpen(false)} className="mt-5 rounded-full bg-ink px-6 py-2.5 text-[12px] font-medium uppercase tracking-[0.16em] text-paper hover:bg-ink/90">Browse the shop</button>
+          </div>
+        ) : (
+          <div className="flex-1 divide-y divide-ink/8 overflow-y-auto px-6">
+            {saved.map((p) => {
+              const sold = p.stock === 0;
+              return (
+                <div key={p.id} className="flex gap-4 py-4">
+                  <button onClick={() => openPdp(p)}><ArtBox k={p.art} box="h-16 w-16" scale="scale-[0.48]" /></button>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex justify-between gap-3">
+                      <button onClick={() => openPdp(p)} className="text-left text-[13.5px] font-medium text-ink hover:text-gold">{p.name}</button>
+                      <span className="text-[13px] text-ink">{eur(p.price)}</span>
+                    </div>
+                    <div className="mt-0.5 text-[11.5px] text-mute">{p.collection}</div>
+                    <div className="mt-2 flex items-center justify-between">
+                      <button onClick={() => openPdp(p)} className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-gold hover:text-ink">{sold ? 'View' : 'View & add'} →</button>
+                      <button onClick={() => toggleWish(p.id)} className="text-[11.5px] text-mute hover:text-rose-500">Remove</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </aside>
+    </div>
+  );
+}
+
+/* ───────────────────────── Cart drawer ───────────────────────── */
+function CartDrawer() {
+  const { items, cartOpen, setCartOpen, setQty, remove, subtotal, setCheckout, count, discount, discountAmount, freeShipCode } = useShop();
+  if (!cartOpen) return null;
+  const total = Math.max(0, subtotal - discountAmount);
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px]" onClick={() => setCartOpen(false)}></div>
+      <aside className="relative z-10 flex h-full w-full max-w-md flex-col bg-paper shadow-2xl">
+        <div className="flex items-center justify-between border-b border-ink/10 px-6 py-5">
+          <h3 className="font-serif text-[22px] font-medium text-ink">Your bag {count > 0 && <span className="text-mute">({count})</span>}</h3>
+          <button onClick={() => setCartOpen(false)} className="rounded-lg p-2 text-mute hover:bg-ink/5 hover:text-ink"><CloseIcon size={18} /></button>
+        </div>
+        {items.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+            <div className="mb-4 text-mute"><BagIcon size={40} /></div>
+            <div className="font-serif text-[20px] text-ink">Your bag is empty</div>
+            <p className="mt-2 text-[13px] font-light text-mute">Discover handmade pieces from the Aegean.</p>
+            <button onClick={() => setCartOpen(false)} className="mt-5 rounded-full bg-ink px-6 py-2.5 text-[12px] font-medium uppercase tracking-[0.16em] text-paper hover:bg-ink/90">Continue shopping</button>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 divide-y divide-ink/8 overflow-y-auto px-6">
+              {items.map((it) => (
+                <div key={it.key} className="flex gap-4 py-4">
+                  <ArtBox k={it.art} box="h-16 w-16" scale="scale-[0.48]" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex justify-between gap-3">
+                      <span className="text-[13.5px] font-medium text-ink">{it.name}</span>
+                      <span className="text-[13px] text-ink">{eur(it.price * it.qty)}</span>
+                    </div>
+                    {it.variant && <div className="mt-0.5 text-[11.5px] text-mute">{it.variant}</div>}
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="flex items-center rounded-full border border-ink/20">
+                        <button onClick={() => setQty(it.key, it.qty - 1)} className="px-2.5 py-1 text-ink/70 hover:text-ink">−</button>
+                        <span className="w-7 text-center text-[12px] text-ink">{it.qty}</span>
+                        <button onClick={() => setQty(it.key, it.qty + 1)} className="px-2.5 py-1 text-ink/70 hover:text-ink">+</button>
+                      </div>
+                      <button onClick={() => remove(it.key)} className="text-[11.5px] text-mute hover:text-rose-500">Remove</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-ink/10 px-6 py-5">
+              <div className="mb-4"><DiscountField /></div>
+              <div className="flex justify-between text-[13px] text-mute"><span>Subtotal</span><span className="text-ink">{eur(subtotal)}</span></div>
+              {discount && discountAmount > 0 && <div className="mt-1 flex justify-between text-[13px] text-gold"><span>Discount ({discount.code})</span><span>−{eur(discountAmount)}</span></div>}
+              <div className="mt-1 flex justify-between text-[12px] text-mute"><span>Shipping</span><span>{(subtotal >= 100 || freeShipCode) ? 'Free' : 'Calculated at checkout'}</span></div>
+              <button onClick={() => { setCartOpen(false); setCheckout(true); }} className="mt-4 w-full rounded-full bg-gold py-3.5 text-[12.5px] font-medium uppercase tracking-[0.16em] text-white transition-colors hover:bg-gold/90">Checkout · {eur(total)}</button>
+              <button onClick={() => setCartOpen(false)} className="mt-2 w-full text-[11.5px] tracking-wide text-mute hover:text-ink">Continue shopping</button>
+            </div>
+          </>
+        )}
+      </aside>
+    </div>
+  );
+}
+
+/* ───────────────────────── Checkout ───────────────────────── */
+const COUNTRY_CODE = { Greece: 'GR', Germany: 'DE', France: 'FR', Italy: 'IT', Ireland: 'IE', Netherlands: 'NL', Spain: 'ES', Portugal: 'PT' };
+function Checkout() {
+  const { checkout, setCheckout, items, subtotal, clear, discount, discountAmount, freeShipCode } = useShop();
+  const [step, setStep] = useState(0);
+  const [info, setInfo] = useState({ name: '', email: '', address: '', city: '', zip: '', country: 'Greece' });
+  const [card, setCard] = useState({ num: '', exp: '', cvc: '' });
+  const [method, setMethod] = useState('card');
+  const [order, setOrder] = useState(null);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => { if (checkout) { setStep(0); setOrder(null); setMethod('card'); } }, [checkout]);
+  if (!checkout) return null;
+  const BANK = PathosStore.BANK;
+  const PAY = {
+    card:   { status: 'Paid', label: 'Card' },
+    apple:  { status: 'Paid', label: 'Apple Pay' },
+    google: { status: 'Paid', label: 'Google Pay' },
+    bank:   { status: 'Awaiting payment', label: 'Bank transfer' },
+  };
+  const set = (k, v) => setInfo((s) => ({ ...s, [k]: v }));
+  const setC = (k, v) => setCard((s) => ({ ...s, [k]: v }));
+  const f = 'w-full rounded-lg border border-ink/15 bg-paper px-3 py-2.5 text-[13.5px] text-ink placeholder:text-mute focus:border-gold focus:outline-none';
+  const shipping = (subtotal >= 100 || freeShipCode) ? 0 : 5;
+  const total = Math.max(0, subtotal - discountAmount) + shipping;
+  const step0Ok = info.name && info.email.includes('@') && info.address && info.city;
+  const step1Ok = method === 'card' ? (card.num.replace(/\s/g, '').length >= 12 && card.exp && card.cvc.length >= 3) : true;
+  const pay = PAY[method];
+  const place = () => {
+    const o = PathosStore.pushOrder({
+      customer: info.name || 'Guest', email: info.email, country: COUNTRY_CODE[info.country] || 'GR',
+      date: new Date().toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' }),
+      items: items.reduce((s, x) => s + x.qty, 0), total,
+      payment: pay.status, method: pay.label,
+      discount: discount ? { code: discount.code, pct: discount.pct, amount: discountAmount } : null,
+      lines: items.map((x) => ({ k: x.art, name: x.name + (x.variant ? ' · ' + x.variant : ''), qty: x.qty, price: x.price })),
+    });
+    if (info.email.includes('@')) PathosStore.pushSubscriber({ email: info.email, source: 'Checkout' });
+    setOrder(o); clear();
+  };
+  const copyIban = () => { try { navigator.clipboard.writeText(BANK.iban.replace(/\s/g, '')); } catch (e) {} setCopied(true); setTimeout(() => setCopied(false), 1800); };
+  const MethodRow = ({ id, icon, title, sub }) => (
+    <button onClick={() => setMethod(id)} className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${method === id ? 'border-gold bg-gold/[0.06]' : 'border-ink/15 hover:border-ink/30'}`}>
+      <span className={method === id ? 'text-gold' : 'text-mute'}>{icon}</span>
+      <span className="flex-1"><span className="block text-[13px] font-medium text-ink">{title}</span>{sub && <span className="block text-[11.5px] font-light text-mute">{sub}</span>}</span>
+      <span className={`flex h-4 w-4 items-center justify-center rounded-full border ${method === id ? 'border-gold' : 'border-ink/25'}`}>{method === id && <span className="h-2 w-2 rounded-full bg-gold" />}</span>
+    </button>
+  );
+  const Step = ({ n, label }) => (
+    <div className="flex items-center gap-2">
+      <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold ${step >= n ? 'bg-gold text-white' : 'bg-ink/10 text-mute'}`}>{n + 1}</span>
+      <span className={`text-[11px] font-medium uppercase tracking-[0.14em] ${step >= n ? 'text-ink' : 'text-mute'}`}>{label}</span>
+    </div>
+  );
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-5">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" onClick={() => setCheckout(false)}></div>
+      <div className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-paper shadow-2xl">
+        <div className="flex items-center justify-between border-b border-ink/10 px-6 py-5">
+          <h3 className="font-serif text-[22px] font-medium text-ink">{order ? <span className="whitespace-nowrap">Order confirmed</span> : 'Checkout'}</h3>
+          <button onClick={() => setCheckout(false)} className="rounded-lg p-2 text-mute hover:bg-ink/5 hover:text-ink"><CloseIcon size={18} /></button>
+        </div>
+
+        {order ? (
+          order.payment === 'Awaiting payment' ? (
+            <div className="px-7 py-9 text-center">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gold/15 text-gold"><BankIcon size={28} /></div>
+              <div className="font-serif text-[26px] font-medium text-ink">Almost there{info.name ? ', ' + info.name.split(' ')[0] : ''}!</div>
+              <p className="mx-auto mt-3 max-w-sm text-[13.5px] font-light leading-relaxed text-mute">Order <span className="font-medium text-ink">{order.id}</span> is reserved. Transfer <span className="font-medium text-ink">{eur(order.total)}</span> to the account below using <span className="font-medium text-ink">{order.id}</span> as the reference — we ship the moment it clears.</p>
+              <div className="mx-auto mt-5 max-w-xs space-y-1.5 rounded-xl border border-ink/12 bg-sand/30 p-4 text-left text-[12.5px] text-ink">
+                <div className="flex justify-between gap-3"><span className="text-mute">IBAN</span><span className="font-mono">{BANK.iban}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-mute">BIC</span><span className="font-mono">{BANK.bic}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-mute">Reference</span><span className="font-medium">{order.id}</span></div>
+              </div>
+              <button onClick={() => setCheckout(false)} className="mt-7 rounded-full bg-ink px-7 py-3 text-[12px] font-medium uppercase tracking-[0.16em] text-paper hover:bg-ink/90">Done</button>
+            </div>
+          ) : (
+          <div className="px-7 py-10 text-center">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gold/15 text-gold"><CheckBig /></div>
+            <div className="font-serif text-[26px] font-medium text-ink">Thank you{info.name ? ', ' + info.name.split(' ')[0] : ''}!</div>
+            <p className="mx-auto mt-3 max-w-xs text-[13.5px] font-light leading-relaxed text-mute">Your order <span className="font-medium text-ink">{order.id}</span> is confirmed. We've emailed a receipt to <span className="text-ink">{info.email}</span> and will let you know when it ships.</p>
+            <button onClick={() => setCheckout(false)} className="mt-7 rounded-full bg-ink px-7 py-3 text-[12px] font-medium uppercase tracking-[0.16em] text-paper hover:bg-ink/90">Continue shopping</button>
+          </div>
+          )
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-2 border-b border-ink/8 px-6 py-4">
+              <Step n={0} label="Details" /><span className="h-px flex-1 bg-ink/10" /><Step n={1} label="Payment" /><span className="h-px flex-1 bg-ink/10" /><Step n={2} label="Review" />
+            </div>
+            <div className="flex-1 space-y-3 overflow-y-auto px-6 py-6">
+              {step === 0 && (<>
+                <input className={f} placeholder="Full name" value={info.name} onChange={(e) => set('name', e.target.value)} />
+                <input className={f} placeholder="Email" value={info.email} onChange={(e) => set('email', e.target.value)} />
+                <input className={f} placeholder="Address" value={info.address} onChange={(e) => set('address', e.target.value)} />
+                <div className="grid grid-cols-2 gap-3">
+                  <input className={f} placeholder="City" value={info.city} onChange={(e) => set('city', e.target.value)} />
+                  <input className={f} placeholder="Postcode" value={info.zip} onChange={(e) => set('zip', e.target.value)} />
+                </div>
+                <select className={f} value={info.country} onChange={(e) => set('country', e.target.value)}>{Object.keys(COUNTRY_CODE).map((c) => <option key={c}>{c}</option>)}</select>
+              </>)}
+              {step === 1 && (<>
+                <div className="rounded-lg bg-sand/40 p-3 text-[11.5px] font-light text-mute">Demo checkout — no real payment is processed.</div>
+                {/* express pay */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setMethod('apple')} className={`flex items-center justify-center gap-1.5 rounded-lg py-3 text-[14px] font-medium transition ${method === 'apple' ? 'bg-black text-white ring-2 ring-gold ring-offset-2' : 'bg-black text-white hover:opacity-90'}`}><AppleMark size={17} className="-mt-0.5" /> Pay</button>
+                  <button onClick={() => setMethod('google')} className={`flex items-center justify-center gap-1.5 rounded-lg border py-3 text-[14px] font-medium text-ink transition ${method === 'google' ? 'border-gold ring-2 ring-gold ring-offset-2' : 'border-ink/20 hover:border-ink/40'}`}><GoogleG size={18} /> Pay</button>
+                </div>
+                <div className="flex items-center gap-3 py-1 text-[11px] uppercase tracking-[0.16em] text-mute"><span className="h-px flex-1 bg-ink/10" />or pay another way<span className="h-px flex-1 bg-ink/10" /></div>
+                {/* method picker */}
+                <div className="space-y-2.5">
+                  <MethodRow id="card" icon={<CardIcon size={20} />} title="Credit / debit card" sub="Visa · Mastercard · Maestro" />
+                  <MethodRow id="bank" icon={<BankIcon size={20} />} title="Bank transfer / deposit" sub="Pay by IBAN — ships once it clears" />
+                </div>
+                {(method === 'card' || method === 'apple' || method === 'google') && (
+                  <div className="space-y-3 pt-1">
+                    {method === 'card' && (<>
+                      <input className={f} placeholder="Card number" value={card.num} onChange={(e) => setC('num', e.target.value)} />
+                      <div className="grid grid-cols-2 gap-3">
+                        <input className={f} placeholder="MM / YY" value={card.exp} onChange={(e) => setC('exp', e.target.value)} />
+                        <input className={f} placeholder="CVC" value={card.cvc} onChange={(e) => setC('cvc', e.target.value)} />
+                      </div>
+                    </>)}
+                    {(method === 'apple' || method === 'google') && (
+                      <div className="rounded-lg border border-ink/12 bg-sand/30 px-4 py-3 text-[12.5px] font-light leading-relaxed text-mute">You'll confirm securely with {method === 'apple' ? 'Apple Pay' : 'Google Pay'} when you place the order — no card details entered here.</div>
+                    )}
+                    <div className="flex items-center justify-center gap-1.5 text-[11px] font-light text-mute"><LockIcon size={13} className="text-gold" /> Encrypted & secure · we never store card numbers</div>
+                  </div>
+                )}
+                {method === 'bank' && (
+                  <div className="space-y-2 rounded-xl border border-ink/12 bg-sand/30 p-4">
+                    <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-mute">Transfer the total to</div>
+                    <div className="space-y-1.5 text-[13px] text-ink">
+                      <div className="flex justify-between gap-3"><span className="text-mute">Beneficiary</span><span className="text-right">{BANK.beneficiary}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-mute">Bank</span><span>{BANK.bank}</span></div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-mute">IBAN</span>
+                        <button onClick={copyIban} className="flex items-center gap-1.5 font-mono text-[12.5px] text-ink hover:text-gold">{BANK.iban} <CopyIcon size={13} />{copied && <span className="text-[10px] not-italic text-gold">copied</span>}</button>
+                      </div>
+                      <div className="flex justify-between gap-3"><span className="text-mute">BIC</span><span className="font-mono">{BANK.bic}</span></div>
+                    </div>
+                    <p className="pt-1 text-[11.5px] font-light leading-relaxed text-mute">{BANK.note}</p>
+                  </div>
+                )}
+              </>)}
+              {step === 2 && (<>
+                <div className="divide-y divide-ink/8">
+                  {items.map((it) => (
+                    <div key={it.key} className="flex items-center gap-3 py-2.5">
+                      <ArtBox k={it.art} box="h-12 w-12" scale="scale-[0.36]" />
+                      <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-medium text-ink">{it.name}</div><div className="text-[11.5px] text-mute">{it.variant ? it.variant + ' · ' : ''}Qty {it.qty}</div></div>
+                      <span className="text-[12.5px] text-ink">{eur(it.price * it.qty)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3"><DiscountField /></div>
+                <div className="mt-3 space-y-1 border-t border-ink/10 pt-3 text-[13px]">
+                  <div className="flex justify-between text-mute"><span>Subtotal</span><span>{eur(subtotal)}</span></div>
+                  {discount && discountAmount > 0 && <div className="flex justify-between text-gold"><span className="whitespace-nowrap">Discount ({discount.code})</span><span>−{eur(discountAmount)}</span></div>}
+                  <div className="flex justify-between text-mute"><span>Shipping</span><span>{shipping === 0 ? 'Free' : eur(shipping)}</span></div>
+                  <div className="flex justify-between pt-1 font-semibold text-ink"><span>Total</span><span>{eur(total)}</span></div>
+                </div>
+                <div className="mt-3 flex items-center justify-between rounded-lg bg-sand/40 px-3 py-2.5 text-[12.5px]">
+                  <span className="whitespace-nowrap text-mute">Paying with</span>
+                  <span className="flex items-center gap-1.5 whitespace-nowrap font-medium text-ink">{method === 'apple' && <AppleMark size={14} />}{method === 'google' && <GoogleG size={15} />}{method === 'card' && <CardIcon size={15} className="text-mute" />}{method === 'bank' && <BankIcon size={15} className="text-mute" />}{pay.label}</span>
+                </div>
+                <div className="mt-2 text-[12px] font-light text-mute">Shipping to {info.name}, {info.address}, {info.city} {info.zip}, {info.country}.</div>
+              </>)}
+            </div>
+            <div className="flex items-center gap-2.5 border-t border-ink/10 px-6 py-4">
+              {step > 0 && <button onClick={() => setStep(step - 1)} className="rounded-lg border border-ink/15 px-4 py-2.5 text-[12.5px] font-medium text-ink/80 hover:bg-ink/[0.04]">Back</button>}
+              {step < 2 && <button onClick={() => setStep(step + 1)} disabled={step === 0 ? !step0Ok : !step1Ok}
+                className={`ml-auto rounded-lg px-5 py-2.5 text-[12.5px] font-medium text-paper transition-colors ${(step === 0 ? step0Ok : step1Ok) ? 'bg-ink hover:bg-ink/90' : 'cursor-not-allowed bg-ink/30'}`}>Continue</button>}
+              {step === 2 && <button onClick={place} className="ml-auto rounded-lg bg-gold px-6 py-2.5 text-[12.5px] font-medium uppercase tracking-[0.14em] text-white hover:bg-gold/90">{method === 'bank' ? 'Confirm order' : 'Pay ' + eur(total)}</button>}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+function CheckBig() { return <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>; }
+
+/* ───────────────────────── App ───────────────────────── */
+function App() {
+  return (
+    <ShopProvider>
+      <div className="min-h-screen font-sans text-ink">
+        <AnnouncementBar />
+        <header>
+          <TopBar />
+          <Nav />
+        </header>
+        <main>
+          <Hero />
+          <ShopByCollection />
+          <Carousel />
+          <VisitUs />
+          <Promo />
+        </main>
+        <SiteFooter />
+        <ChatWidget />
+        <EntryPopup />
+        <PDPModal />
+        <WishDrawer />
+        <CartDrawer />
+        <Checkout />
+      </div>
+    </ShopProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
