@@ -8,7 +8,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  // SQLite by default → zero-config, fully offline local development.
+  // For production (Vercel / Firebase App Hosting + Cloud SQL), switch this to
+  //   provider = "postgresql"
+  // and point DATABASE_URL at your Postgres instance. All column types below
+  // are portable across both, so that's the only change needed.
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -23,7 +28,7 @@ model Product {
   status     String   @default("Active") // Active | Draft
   sold       Int      @default(0)
   material   String?
-  swatches   String[] // hex color chips
+  swatches   String   @default("[]") // JSON array of hex chips (portable across DBs)
   description String?
   imageUrl   String? // uploaded photo; falls back to line-art when null
   position   Int      @default(0) // manual sort order in catalog/admin
@@ -122,7 +127,7 @@ model Discount {
 // menu | popup | announcement | season). One row per key, JSON value.
 model Setting {
   key       String   @id
-  value     Json
+  value     String // JSON text (portable across DBs)
   updatedAt DateTime @updatedAt
 }
 

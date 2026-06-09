@@ -36,7 +36,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       ...(data.status !== undefined && { status: data.status }),
       ...(data.sold !== undefined && { sold: data.sold }),
       ...(data.material !== undefined && { material: data.material }),
-      ...(data.swatches !== undefined && { swatches: data.swatches }),
+      ...(data.swatches !== undefined && { swatches: JSON.stringify(data.swatches) }),
       ...(data.desc !== undefined && { description: data.desc }),
       ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
     },

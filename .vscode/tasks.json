@@ -2,19 +2,13 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "1 · Start database (Docker)",
-      "type": "shell",
-      "command": "docker compose up -d",
-      "problemMatcher": []
-    },
-    {
-      "label": "2 · Setup DB (push + seed)",
+      "label": "Setup (create DB + seed)",
       "type": "shell",
       "command": "npm run setup",
       "problemMatcher": []
     },
     {
-      "label": "3 · Run dev server",
+      "label": "Run dev server",
       "type": "npm",
       "script": "dev",
       "isBackground": true,
@@ -22,9 +16,15 @@
       "presentation": { "reveal": "always", "panel": "dedicated" }
     },
     {
-      "label": "Start everything (DB → setup → dev)",
+      "label": "Start everything (setup → dev)",
       "dependsOrder": "sequence",
-      "dependsOn": ["1 · Start database (Docker)", "2 · Setup DB (push + seed)", "3 · Run dev server"],
+      "dependsOn": ["Setup (create DB + seed)", "Run dev server"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Postgres: start (Docker, optional)",
+      "type": "shell",
+      "command": "docker compose up -d",
       "problemMatcher": []
     }
   ]

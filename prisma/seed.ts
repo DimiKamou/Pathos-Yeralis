@@ -88,7 +88,7 @@ async function main() {
         status: p.status,
         sold: p.sold,
         material: p.material,
-        swatches: p.swatches,
+        swatches: JSON.stringify(p.swatches),
         description: p.desc,
         position: i,
       },
@@ -105,7 +105,7 @@ async function main() {
     await prisma.setting.upsert({
       where: { key: s.key },
       update: {},
-      create: { key: s.key, value: s.value },
+      create: { key: s.key, value: JSON.stringify(s.value) },
     });
   }
 

@@ -59,7 +59,8 @@ export function Checkout({ bank }: { bank: BankDetails }) {
   const [step, setStep] = useState(0);
   const [info, setInfo] = useState<Info>({ name: "", email: "", address: "", city: "", zip: "", country: "Greece" });
   const stripeAvailable = !!stripePromise;
-  const [method, setMethod] = useState<Method>(stripeAvailable ? "card" : "bank");
+  // "card" is offered in both real (Stripe) and offline-demo modes.
+  const [method, setMethod] = useState<Method>("card");
   const [order, setOrder] = useState<ClientOrder | null>(null);
   const [copied, setCopied] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export function Checkout({ bank }: { bank: BankDetails }) {
     if (checkout) {
       setStep(0);
       setOrder(null);
-      setMethod(stripeAvailable ? "card" : "bank");
+      setMethod("card");
       setClientSecret(null);
       piRef.current = null;
       setPayError("");
@@ -159,7 +160,8 @@ export function Checkout({ bank }: { bank: BankDetails }) {
 
   const flow: FlowProps = {
     step, setStep, method, setMethod, info, items, subtotal, discount, discountAmount, shipping, total,
-    bank, copied, copyIban, placing, payError, cart, onPaid, placeBank, stripeAvailable, f,
+    bank, copied, copyIban, placing, payError, cart, onPaid, placeBank, stripeAvailable,
+    stripeReady: stripeAvailable && !!clientSecret, f,
   };
 
   return (
@@ -216,12 +218,17 @@ export function Checkout({ bank }: { bank: BankDetails }) {
                   <button onClick={() => setStep(1)} disabled={!step0Ok} className={`ml-auto rounded-lg px-5 py-2.5 text-[12.5px] font-medium text-paper transition-colors ${step0Ok ? "bg-ink hover:bg-ink/90" : "cursor-not-allowed bg-ink/30"}`}>Continue</button>
                 </div>
               </>
-            ) : stripeAvailable && clientSecret ? (
-              <Elements stripe={stripePromise} options={{ clientSecret, appearance: elementsAppearance }}>
+            ) : (
+              // Always wrap in <Elements> so PayArea's useStripe/useElements are
+              // safe. stripe=null in offline-demo mode; keyed by clientSecret so
+              // the Payment Element mounts with its secret once the intent exists.
+              <Elements
+                key={clientSecret || "no-cs"}
+                stripe={stripeAvailable ? stripePromise : null}
+                options={clientSecret ? { clientSecret, appearance: elementsAppearance } : undefined}
+              >
                 <PayArea {...flow} />
               </Elements>
-            ) : (
-              <PayArea {...flow} />
             )}
           </>
         )}
@@ -251,6 +258,7 @@ interface FlowProps {
   onPaid: (o: ClientOrder) => void;
   placeBank: () => void;
   stripeAvailable: boolean;
+  stripeReady: boolean;
   f: string;
 }
 
@@ -347,6 +355,28 @@ function PayArea(p: FlowProps) {
     setBusy(false);
   };
 
+  // Offline demo: no Stripe → create a paid test order via /api/checkout/demo.
+  const demoMode = !p.stripeAvailable;
+  const payDemo = async () => {
+    if (busy) return;
+    setBusy(true);
+    setLocalErr("");
+    try {
+      const res = await fetch("/api/checkout/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cart: p.cart, discountCode: p.discount?.code ?? null, contact: p.info }),
+      });
+      const data = await res.json();
+      if (data.ok) p.onPaid(data.order);
+      else setLocalErr(data.error || "Could not create demo order");
+    } catch {
+      setLocalErr("Could not create demo order");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const MethodRow = ({ id, icon, title, sub }: { id: Method; icon: React.ReactNode; title: string; sub?: string }) => (
     <button onClick={() => p.setMethod(id)} className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${p.method === id ? "border-gold bg-gold/[0.06]" : "border-ink/15 hover:border-ink/30"}`}>
       <span className={p.method === id ? "text-gold" : "text-mute"}>{icon}</span>
@@ -356,7 +386,7 @@ function PayArea(p: FlowProps) {
   );
 
   const payLabel = p.method === "bank" ? "Confirm order" : "Pay " + eur(p.total);
-  const onPay = p.method === "bank" ? p.placeBank : payCard;
+  const onPay = p.method === "bank" ? p.placeBank : demoMode ? payDemo : payCard;
   const busyAll = busy || p.placing;
 
   return (
@@ -364,7 +394,11 @@ function PayArea(p: FlowProps) {
       <div className="flex-1 space-y-3 overflow-y-auto px-6 py-6">
         {/* ── Payment step (kept mounted so the card field survives step 2) ── */}
         <div className={p.step === 1 ? "space-y-3" : "hidden"}>
-          <div className="rounded-lg bg-sand/40 p-3 text-[11.5px] font-light text-mute">Test mode — use Stripe test card 4242 4242 4242 4242, any future date & CVC.</div>
+          <div className="rounded-lg bg-sand/40 p-3 text-[11.5px] font-light text-mute">
+            {demoMode
+              ? "Offline demo — a paid test order is created instantly (no charge, no network). Add Stripe test keys to enable real card & wallet payments."
+              : "Test mode — use Stripe test card 4242 4242 4242 4242, any future date & CVC."}
+          </div>
           {/* express pay */}
           {p.stripeAvailable && (
             <>
@@ -381,13 +415,27 @@ function PayArea(p: FlowProps) {
           )}
           {/* method picker */}
           <div className="space-y-2.5">
-            {p.stripeAvailable && <MethodRow id="card" icon={<CardIcon size={20} />} title="Credit / debit card" sub="Visa · Mastercard · Maestro" />}
+            <MethodRow
+              id="card"
+              icon={<CardIcon size={20} />}
+              title={demoMode ? "Card (demo)" : "Credit / debit card"}
+              sub={demoMode ? "Simulated — no real charge" : "Visa · Mastercard · Maestro"}
+            />
             <MethodRow id="bank" icon={<BankIcon size={20} />} title="Bank transfer / deposit" sub="Pay by IBAN — ships once it clears" />
           </div>
-          {p.method === "card" && p.stripeAvailable && (
-            <div className="space-y-3 pt-1">
-              <PaymentElement options={{ layout: "tabs" }} />
-              <div className="flex items-center justify-center gap-1.5 text-[11px] font-light text-mute"><LockIcon size={13} className="text-gold" /> Encrypted &amp; secure · we never store card numbers</div>
+          {p.method === "card" && !demoMode && (
+            p.stripeReady ? (
+              <div className="space-y-3 pt-1">
+                <PaymentElement options={{ layout: "tabs" }} />
+                <div className="flex items-center justify-center gap-1.5 text-[11px] font-light text-mute"><LockIcon size={13} className="text-gold" /> Encrypted &amp; secure · we never store card numbers</div>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-ink/12 bg-sand/30 px-4 py-6 text-center text-[12.5px] font-light text-mute">Loading secure payment…</div>
+            )
+          )}
+          {p.method === "card" && demoMode && (
+            <div className="rounded-lg border border-ink/12 bg-sand/30 px-4 py-3 text-[12.5px] font-light leading-relaxed text-mute">
+              Demo checkout — clicking <span className="font-medium text-ink">Pay</span> creates a paid test order so you can see the confirmation and find it in the admin. No card is charged.
             </div>
           )}
           {p.method === "bank" && (

@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       status: data.status,
       sold: data.sold,
       material: data.material ?? null,
-      swatches: data.swatches,
+      swatches: JSON.stringify(data.swatches),
       description: data.desc ?? null,
       imageUrl: data.imageUrl ?? null,
       position: count,

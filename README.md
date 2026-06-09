@@ -35,58 +35,44 @@ database, no Stripe, no real orders.
 > Live Server only serves static files, so it **cannot** run the real Next.js
 > app below — that needs the dev server.
 
-### B) The real app — with the **dev server** (full functionality)
-Requires Node 20+ and a Postgres database. Easiest path (Docker Desktop running):
+### B) The real app — with the **dev server** (full, offline)
+Requires only **Node 20+**. The default database is **SQLite**, so there's
+nothing to install and it runs **completely offline**:
 
 ```bash
 npm install
-cp .env.example .env      # defaults already match the Docker DB below
-npm run db:up             # start Postgres in Docker  (docker compose up -d)
-npm run setup             # generate client + push schema + seed demo data
+cp .env.example .env      # SQLite + offline-demo defaults are already set
+npm run setup             # generate client + create the SQLite DB + seed demo data
 npm run dev               # → http://localhost:3000   (admin at /admin)
 ```
 
-No Docker? Point `DATABASE_URL` at a free hosted DB (Neon / Supabase / Vercel
-Postgres), then run `npm run setup && npm run dev`.
+That's the whole **offline preview** — browse, cart, wishlist, discounts, a
+**demo card checkout** (no Stripe needed; creates a real paid test order), the
+bank-transfer flow, the welcome popup, and the full admin. Emails log to the
+terminal.
 
-In VS Code you can also press **⇧⌘B / Ctrl-Shift-B → "Start everything"** (runs
-DB → setup → dev), or use **Run and Debug → "Next.js: dev server"**. Recommended
-extensions are suggested automatically on first open.
+In VS Code you can instead use **Run and Debug → "Next.js: dev server"**, or the
+**"Start everything (setup → dev)"** build task. Recommended extensions are
+suggested on first open.
 
-Log into the admin at `/admin` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from
-your `.env`.
+Log into the admin at `/admin` with `ADMIN_EMAIL` / `ADMIN_PASSWORD` from your
+`.env` (defaults `admin@pathos-yeralis.gr` / `change-me`).
 
-## Quick start
+## Database (SQLite by default, Postgres for production)
 
-```bash
-# 1) Install
-npm install
+The default is **SQLite** (`DATABASE_URL="file:./dev.db"`) — zero-config and
+fully offline. `npm run setup` runs `prisma generate && prisma db push &&
+prisma db seed`.
 
-# 2) Configure env
-cp .env.example .env
-#   → set DATABASE_URL, ADMIN_PASSWORD, ADMIN_SESSION_SECRET
-#   → (optional) Stripe test keys; leave blank for bank-transfer-only
-#   → (optional) RESEND_API_KEY; blank logs emails to the console
+For **production** (Vercel / Firebase App Hosting + Cloud SQL), switch to Postgres:
 
-# 3) Create the schema + seed from prototypes/pathos-store.js
-npm run db:push      # or: npm run db:migrate  (creates a migration)
-npm run db:seed
+1. In `prisma/schema.prisma` set `provider = "postgresql"`.
+2. Set `DATABASE_URL` to your Postgres connection string.
+3. `npm run db:push && npm run db:seed`.
 
-# 4) Run
-npm run dev          # http://localhost:3000  (admin at /admin)
-```
-
-### Need a local Postgres?
-
-Any of these work — point `DATABASE_URL` at it:
-
-```bash
-# Docker
-docker run --name pathos-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=pathos -p 5432:5432 -d postgres:16
-# → DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/pathos?schema=public"
-```
-
-Or a free hosted DB (Neon, Supabase, Vercel Postgres) — paste its connection string.
+All column types are portable across SQLite/Postgres, so that's the only code
+change. A local Postgres for prod-like testing is available via `npm run db:up`
+(see `docker-compose.yml`).
 
 ## Seeding
 
@@ -103,7 +89,23 @@ Re-running is safe (idempotent upserts). Default admin login:
 
 ## Payments
 
-Card + wallets ride entirely on Stripe; bank transfer is a manual offline flow.
+**Offline by default:** with no Stripe keys set, the storefront offers a
+**Card (demo)** option that creates a real *paid* test order (via
+`/api/checkout/demo`) so you can walk the full card → "Thank you" → admin flow
+with **no network**. Bank transfer also works fully offline. The demo route is
+**hard-disabled the moment `STRIPE_SECRET_KEY` is set**, so it can never run in
+production.
+
+**Turn on real card + wallet payments (Stripe test mode):** add your Stripe
+**test** keys to `.env`, then restart `npm run dev`:
+
+```
+STRIPE_SECRET_KEY=sk_test_…
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_…
+```
+
+Get them at <https://dashboard.stripe.com/test/apikeys>. Once set, checkout uses
+Stripe for real:
 
 - **Card** — Stripe Payment Element. Test card `4242 4242 4242 4242`, any future
   expiry + any CVC.
@@ -178,6 +180,29 @@ API routes**, keeping the same data shapes so the UI ported cleanly.
    for `payment_intent.succeeded`; put its signing secret in
    `STRIPE_WEBHOOK_SECRET`.
 6. Deploy. `npm run build` runs `prisma generate` automatically.
+
+## Deploy to Firebase
+
+This is a standard Next.js SSR app, so the least-rewrite path is **Firebase App
+Hosting** (which runs Next.js server-side) backed by Postgres on **Cloud SQL** —
+Prisma and all the code stay exactly as-is.
+
+1. `npm i -g firebase-tools && firebase login`.
+2. Create an **App Hosting** backend (console or `firebase init apphosting`) and
+   connect this GitHub repo / deploy branch.
+3. Provision **Cloud SQL for PostgreSQL**, then set `provider = "postgresql"` in
+   `prisma/schema.prisma`.
+4. Add the env vars from `.env.example` as App Hosting secrets — `DATABASE_URL`
+   (Cloud SQL connection string), `ADMIN_*`, `STRIPE_*`, `RESEND_API_KEY`,
+   `EMAIL_FROM`, `BANK_*`. Expose `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` at build
+   time in `apphosting.yaml`.
+5. Apply schema + seed once against Cloud SQL:
+   `DATABASE_URL="<url>" npm run db:push && DATABASE_URL="<url>" npm run db:seed`.
+6. Push — App Hosting builds (`npm run build`) and serves it.
+
+> Prefer **Firestore** over Cloud SQL? That's a bigger change (Firestore is
+> NoSQL, so the Prisma data layer would be rewritten). For the alpha I'd keep
+> Cloud SQL + Prisma — ping me if you want the Firestore route scoped.
 
 ## Before going live (not part of the alpha)
 

@@ -4,6 +4,17 @@ import { prisma } from "./prisma";
 import type { StoreProduct } from "./types";
 import type { Product } from "@prisma/client";
 
+// swatches are stored as JSON text (portable across SQLite/Postgres).
+export function parseSwatches(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export function serializeProduct(p: Product): StoreProduct {
   return {
     id: p.id,
@@ -15,7 +26,7 @@ export function serializeProduct(p: Product): StoreProduct {
     status: p.status,
     sold: p.sold,
     material: p.material,
-    swatches: p.swatches,
+    swatches: parseSwatches(p.swatches),
     desc: p.description,
     imageUrl: p.imageUrl,
   };

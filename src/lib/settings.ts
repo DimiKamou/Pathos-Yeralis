@@ -48,6 +48,16 @@ export const DEFAULT_SETTINGS: StoreSettings = {
 
 type SettingKey = keyof StoreSettings;
 
+// Setting.value is stored as JSON text (portable across SQLite/Postgres).
+function parseJson(raw: string | null | undefined): unknown {
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+}
+
 function mergeDefault<K extends SettingKey>(key: K, value: unknown): StoreSettings[K] {
   const def = DEFAULT_SETTINGS[key];
   if (Array.isArray(def)) {
@@ -61,12 +71,12 @@ function mergeDefault<K extends SettingKey>(key: K, value: unknown): StoreSettin
 
 export async function getSetting<K extends SettingKey>(key: K): Promise<StoreSettings[K]> {
   const row = await prisma.setting.findUnique({ where: { key } });
-  return mergeDefault(key, row?.value);
+  return mergeDefault(key, parseJson(row?.value));
 }
 
 export async function getAllSettings(): Promise<StoreSettings> {
   const rows = await prisma.setting.findMany();
-  const map = new Map(rows.map((r) => [r.key, r.value]));
+  const map = new Map(rows.map((r) => [r.key, parseJson(r.value)]));
   return {
     menu: mergeDefault("menu", map.get("menu")),
     popup: mergeDefault("popup", map.get("popup")),
@@ -79,11 +89,10 @@ export async function saveSetting<K extends SettingKey>(
   key: K,
   value: StoreSettings[K],
 ): Promise<void> {
+  const json = JSON.stringify(value);
   await prisma.setting.upsert({
     where: { key },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    create: { key, value: value as any },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    update: { value: value as any },
+    create: { key, value: json },
+    update: { value: json },
   });
 }
