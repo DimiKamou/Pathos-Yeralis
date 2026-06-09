@@ -1,45 +1,18 @@
-// Minimal admin auth: a signed JWT in an httpOnly cookie. Storefront checkout
-// stays guest-first; only /admin is gated (see src/middleware.ts).
-import { SignJWT, jwtVerify } from "jose";
+// Node-side admin auth: credential check (bcrypt) + cookie management. JWT
+// sign/verify live in auth-edge.ts so middleware can share them on the edge.
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
+import {
+  SESSION_COOKIE,
+  SESSION_MAX_AGE,
+  createSessionToken,
+  verifySessionToken,
+  type AdminSession,
+} from "./auth-edge";
 
-export const SESSION_COOKIE = "pathos_admin";
-const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
-
-function secret(): Uint8Array {
-  const s = process.env.ADMIN_SESSION_SECRET || "dev-insecure-secret-change-me";
-  return new TextEncoder().encode(s);
-}
-
-export interface AdminSession {
-  sub: string; // admin user id
-  email: string;
-  name?: string;
-}
-
-export async function createSessionToken(session: AdminSession): Promise<string> {
-  return new SignJWT({ email: session.email, name: session.name })
-    .setProtectedHeader({ alg: "HS256" })
-    .setSubject(session.sub)
-    .setIssuedAt()
-    .setExpirationTime(`${MAX_AGE}s`)
-    .sign(secret());
-}
-
-export async function verifySessionToken(token: string): Promise<AdminSession | null> {
-  try {
-    const { payload } = await jwtVerify(token, secret());
-    return {
-      sub: String(payload.sub),
-      email: String(payload.email),
-      name: payload.name ? String(payload.name) : undefined,
-    };
-  } catch {
-    return null;
-  }
-}
+export { SESSION_COOKIE, createSessionToken, verifySessionToken };
+export type { AdminSession };
 
 // Verify credentials against the AdminUser table.
 export async function authenticate(email: string, password: string): Promise<AdminSession | null> {
@@ -50,11 +23,18 @@ export async function authenticate(email: string, password: string): Promise<Adm
   return { sub: user.id, email: user.email, name: user.name ?? undefined };
 }
 
-// Server-component / route helper: current admin session or null.
+// Current admin session (server components / route handlers) or null.
 export async function getAdminSession(): Promise<AdminSession | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   return verifySessionToken(token);
+}
+
+// Throw helper for admin API routes.
+export async function requireAdmin(): Promise<AdminSession> {
+  const session = await getAdminSession();
+  if (!session) throw new Response("Unauthorized", { status: 401 });
+  return session;
 }
 
 export async function setSessionCookie(token: string): Promise<void> {
@@ -63,7 +43,7 @@ export async function setSessionCookie(token: string): Promise<void> {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: MAX_AGE,
+    maxAge: SESSION_MAX_AGE,
   });
 }
 

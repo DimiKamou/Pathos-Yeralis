@@ -13,8 +13,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-jost)", "Jost", "system-ui", "sans-serif"],
-        serif: ["var(--font-cormorant)", '"Cormorant Garamond"', "Georgia", "serif"],
+        sans: ["Jost", "system-ui", "sans-serif"],
+        serif: ['"Cormorant Garamond"', "Georgia", "serif"],
       },
       colors: {
         ink: "rgb(var(--c-ink) / <alpha-value>)",
