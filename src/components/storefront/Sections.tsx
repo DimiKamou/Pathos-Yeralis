@@ -14,10 +14,10 @@ import type { StoreProduct } from "@/lib/types";
 const GOLD = "#a9824a";
 
 /* ───────────────────────── Shop by Collection ───────────────────────── */
-function CollectionCard({ tone, eyebrow, label, motif }: { tone: "light" | "dark"; eyebrow: string; label: string; motif: ReactNode }) {
+function CollectionCard({ tone, eyebrow, label, motif, href = "#" }: { tone: "light" | "dark"; eyebrow: string; label: string; motif: ReactNode; href?: string }) {
   const dark = tone === "dark";
   return (
-    <a href="#" className={`group relative block aspect-[5/4] overflow-hidden ${dark ? "bg-[#2b2620]" : "bg-sand"}`}>
+    <a href={href} className={`group relative block aspect-[5/4] overflow-hidden ${dark ? "bg-[#2b2620]" : "bg-sand"}`}>
       {/* faint product motif */}
       <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${dark ? "opacity-25" : "opacity-40"}`}>{motif}</div>
       <div className="absolute left-7 top-7">
@@ -60,8 +60,8 @@ export function ShopByCollection() {
         </p>
       </header>
       <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
-        <CollectionCard tone="light" eyebrow="Aegean" label="Shop the Sea Collection" motif={beadsMotif(true)} />
-        <CollectionCard tone="dark" eyebrow="Hematite" label="Shop Hematite" motif={gemMotif} />
+        <CollectionCard tone="light" eyebrow="Aegean" label="Shop the Sea Collection" motif={beadsMotif(true)} href="/collections/aegean" />
+        <CollectionCard tone="dark" eyebrow="Hematite" label="Shop Hematite" motif={gemMotif} href="/collections/hematite" />
       </div>
     </section>
   );
@@ -78,7 +78,7 @@ function Swatches({ colors }: { colors: string[] }) {
   );
 }
 
-function ProductCard({ p }: { p: StoreProduct }) {
+export function ProductCard({ p }: { p: StoreProduct }) {
   const { setPdp, toggleWish, inWish } = useShop();
   const sold = p.stock === 0;
   const saved = inWish(p.id);

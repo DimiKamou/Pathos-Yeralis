@@ -4,6 +4,7 @@
 // via props (filtered to enabled items) instead of PathosStore + storage events.
 import { useState } from "react";
 import type { MenuItem } from "@/lib/types";
+import { slugify } from "@/lib/slug";
 
 export function Nav({ menu, collections }: { menu: MenuItem[]; collections: string[] }) {
   const [open, setOpen] = useState(false);
@@ -15,15 +16,15 @@ export function Nav({ menu, collections }: { menu: MenuItem[]; collections: stri
         {items.map((m) =>
           m.type === "collections" ? (
             <div key={m.id} className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-              <button className={linkCls + " flex items-center gap-1.5 uppercase"} onClick={() => setOpen((v) => !v)}>
+              <a href="/collections" className={linkCls + " flex items-center gap-1.5 uppercase"}>
                 {m.label}
-              </button>
+              </a>
               {open && (
                 <div className="absolute left-1/2 top-[calc(100%+16px)] z-30 w-56 -translate-x-1/2 border border-ink/12 bg-paper py-3 shadow-[0_18px_50px_-24px_rgba(80,60,30,0.35)]">
                   <ul className="flex flex-col">
                     {collections.map((l) => (
                       <li key={l}>
-                        <a href="#" className="block px-6 py-[9px] text-[12.5px] font-light tracking-[0.06em] text-steel hover:bg-ink/[0.03] hover:text-ink/80 transition-colors">
+                        <a href={`/collections/${slugify(l)}`} className="block px-6 py-[9px] text-[12.5px] font-light tracking-[0.06em] text-steel hover:bg-ink/[0.03] hover:text-ink/80 transition-colors">
                           {l}
                         </a>
                       </li>
