@@ -9,6 +9,7 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "setup": "prisma generate && prisma db push && prisma db seed",
+    "doctor": "node scripts/doctor.mjs",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:push": "prisma db push",

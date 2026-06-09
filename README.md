@@ -55,8 +55,13 @@ In VS Code you can instead use **Run and Debug → "Next.js: dev server"**, or t
 **"Start everything (setup → dev)"** build task. Recommended extensions are
 suggested on first open.
 
-Log into the admin at `/admin` with `ADMIN_EMAIL` / `ADMIN_PASSWORD` from your
-`.env` (defaults `admin@pathos-yeralis.gr` / `change-me`).
+**Admin:** open <http://localhost:3000/admin> — in dev it opens **directly, no
+login**. (In production it's protected by `ADMIN_EMAIL` / `ADMIN_PASSWORD`.) Do
+**not** open `prototypes/PATHOS Admin.html` — that's a static mockup and renders
+blank; the real admin is the `/admin` route.
+
+Stuck or seeing a blank page? Run **`npm run doctor`** for a preflight check of
+your env, database, and the exact URLs to open.
 
 ## Database (SQLite by default, Postgres for production)
 

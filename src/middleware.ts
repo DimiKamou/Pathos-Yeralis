@@ -5,6 +5,10 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth-edge";
 // API stay public. Storefront + storefront APIs are untouched (guest-first).
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  // In development the admin is left open so it's instantly explorable with no
+  // login. Production (npm run build/start, Vercel, Firebase) always enforces
+  // the session below.
+  if (process.env.NODE_ENV !== "production") return NextResponse.next();
   const isLogin = pathname === "/admin/login";
   const isAuthApi = pathname.startsWith("/api/admin/login") || pathname.startsWith("/api/admin/logout");
   if (isLogin || isAuthApi) return NextResponse.next();
