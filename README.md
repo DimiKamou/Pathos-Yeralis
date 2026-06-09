@@ -21,6 +21,41 @@ high-fidelity prototypes in [`prototypes/`](./prototypes).
 | Auth | Signed-cookie session for the **admin** only; checkout is guest-first |
 | Hosting | Vercel |
 
+## Open & run it in VS Code
+
+There are two ways to look at this, and they're different:
+
+### A) The prototypes — with **Live Server** (instant, design only)
+The files in [`prototypes/`](./prototypes) are plain HTML and run great with the
+**Live Server** extension (right-click `prototypes/PATHOS by Yeralis.html` →
+*Open with Live Server*). This is the original design with demo data held in your
+browser — handy for a quick visual/UX pass. It is **not** the real app: no
+database, no Stripe, no real orders.
+
+> Live Server only serves static files, so it **cannot** run the real Next.js
+> app below — that needs the dev server.
+
+### B) The real app — with the **dev server** (full functionality)
+Requires Node 20+ and a Postgres database. Easiest path (Docker Desktop running):
+
+```bash
+npm install
+cp .env.example .env      # defaults already match the Docker DB below
+npm run db:up             # start Postgres in Docker  (docker compose up -d)
+npm run setup             # generate client + push schema + seed demo data
+npm run dev               # → http://localhost:3000   (admin at /admin)
+```
+
+No Docker? Point `DATABASE_URL` at a free hosted DB (Neon / Supabase / Vercel
+Postgres), then run `npm run setup && npm run dev`.
+
+In VS Code you can also press **⇧⌘B / Ctrl-Shift-B → "Start everything"** (runs
+DB → setup → dev), or use **Run and Debug → "Next.js: dev server"**. Recommended
+extensions are suggested automatically on first open.
+
+Log into the admin at `/admin` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from
+your `.env`.
+
 ## Quick start
 
 ```bash
