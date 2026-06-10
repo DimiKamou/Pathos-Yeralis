@@ -33,7 +33,7 @@ interface FormState {
   status: string;
   sold: string;
   material: string;
-  swatches: string;
+  swatches: string[];
   desc: string;
   images: string[];
 }
@@ -47,7 +47,7 @@ const blankForm: FormState = {
   status: "Active",
   sold: "0",
   material: "",
-  swatches: "",
+  swatches: [],
   desc: "",
   images: [],
 };
@@ -63,7 +63,7 @@ function toForm(p: StoreProduct): FormState {
     status: p.status,
     sold: String(p.sold),
     material: p.material ?? "",
-    swatches: (p.swatches || []).join(", "),
+    swatches: p.swatches || [],
     desc: p.desc ?? "",
     images: p.images || [],
   };
@@ -130,7 +130,7 @@ export function Products(_props: ViewProps) {
       status: form.status,
       sold: Number(form.sold) || 0,
       material: form.material,
-      swatches: form.swatches.split(",").map((s) => s.trim()).filter(Boolean),
+      swatches: form.swatches,
       desc: form.desc,
       images: form.images,
     };
@@ -303,8 +303,30 @@ export function Products(_props: ViewProps) {
               </Field>
             </div>
             <div className="sm:col-span-2">
-              <Field label="Swatches (comma-separated hex)">
-                <TextInput value={form.swatches} placeholder="#141414, #a9824a, #cdb78f" onChange={(e) => setForm({ ...form, swatches: e.target.value })} />
+              <Field label="Colours (optional — shown as dots on the product)">
+                <div className="flex flex-wrap items-center gap-2">
+                  {form.swatches.map((c, i) => (
+                    <div key={i} className="flex items-center gap-1.5 rounded-full border border-ink/15 bg-paper py-1 pl-1 pr-2.5">
+                      <input
+                        type="color"
+                        value={/^#[0-9a-fA-F]{6}$/.test(c) ? c : "#b1894e"}
+                        onChange={(e) => setForm({ ...form, swatches: form.swatches.map((x, j) => (j === i ? e.target.value : x)) })}
+                        className="h-6 w-6 cursor-pointer rounded-full border border-ink/10 bg-transparent p-0"
+                        title="Pick a colour"
+                      />
+                      <span className="font-mono text-[11px] text-mute">{c}</span>
+                      <button onClick={() => setForm({ ...form, swatches: form.swatches.filter((_, j) => j !== i) })} className="text-[12px] text-mute hover:text-red-600" title="Remove colour">
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setForm({ ...form, swatches: [...form.swatches, "#b1894e"] })}
+                    className="flex items-center gap-1 rounded-full border border-dashed border-ink/25 px-3 py-1.5 text-[12px] text-mute hover:border-gold hover:text-gold"
+                  >
+                    <Icon.plus size={13} /> Add colour
+                  </button>
+                </div>
               </Field>
             </div>
             <div className="sm:col-span-2">
