@@ -8,7 +8,7 @@ export async function GET() {
 }
 
 const schema = z.object({
-  key: z.enum(["menu", "collections", "contact", "popup", "announcement", "season"]),
+  key: z.enum(["menu", "collections", "contact", "footer", "popup", "announcement", "season"]),
   value: z.unknown(),
 });
 

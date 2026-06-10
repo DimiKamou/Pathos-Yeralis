@@ -81,10 +81,26 @@ export interface ContactSetting {
   instagram: string;
 }
 
+export interface FooterLink {
+  label: string;
+  href: string;
+}
+export interface FooterColumn {
+  title: string;
+  links: FooterLink[];
+}
+export interface FooterSetting {
+  tagline: string;
+  facebook: string;
+  pinterest: string;
+  columns: FooterColumn[];
+}
+
 export interface StoreSettings {
   menu: MenuItem[];
   collections: string[];
   contact: ContactSetting;
+  footer: FooterSetting;
   popup: PopupSetting;
   announcement: AnnouncementSetting;
   season: SeasonSetting;

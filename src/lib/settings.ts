@@ -7,6 +7,7 @@ import { prisma } from "./prisma";
 import type {
   AnnouncementSetting,
   ContactSetting,
+  FooterSetting,
   MenuItem,
   PopupSetting,
   SeasonSetting,
@@ -68,10 +69,51 @@ export const DEFAULT_CONTACT: ContactSetting = {
   instagram: "https://www.instagram.com/pathos_by_yeralis/",
 };
 
+// Footer brand line, socials + link columns — admin-editable.
+export const DEFAULT_FOOTER: FooterSetting = {
+  tagline:
+    "Handmade jewelry from the Aegean — gemstones, shells and minerals shaped into pieces made to last a lifetime.",
+  facebook: "",
+  pinterest: "",
+  columns: [
+    {
+      title: "Shop",
+      links: [
+        { label: "New In", href: "/collections/new-in" },
+        { label: "Bestsellers", href: "/shop" },
+        { label: "Collections", href: "/collections" },
+        { label: "Gift Cards", href: "/pages/gift-cards" },
+        { label: "Sale", href: "/shop" },
+      ],
+    },
+    {
+      title: "About",
+      links: [
+        { label: "Our Story", href: "/about" },
+        { label: "The Atelier", href: "/about" },
+        { label: "Sustainability", href: "/pages/sustainability" },
+        { label: "Journal", href: "/pages/journal" },
+        { label: "Stockists", href: "/pages/stockists" },
+      ],
+    },
+    {
+      title: "Help",
+      links: [
+        { label: "Contact Us", href: "/about" },
+        { label: "Shipping & Returns", href: "/pages/shipping-returns" },
+        { label: "Care Guide", href: "/pages/care-guide" },
+        { label: "Size Guide", href: "/pages/size-guide" },
+        { label: "FAQ", href: "/pages/faq" },
+      ],
+    },
+  ],
+};
+
 export const DEFAULT_SETTINGS: StoreSettings = {
   menu: DEFAULT_MENU,
   collections: DEFAULT_COLLECTIONS,
   contact: DEFAULT_CONTACT,
+  footer: DEFAULT_FOOTER,
   popup: DEFAULT_POPUP,
   announcement: DEFAULT_ANNOUNCEMENT,
   season: DEFAULT_SEASON,
@@ -112,6 +154,7 @@ export async function getAllSettings(): Promise<StoreSettings> {
     menu: mergeDefault("menu", map.get("menu")),
     collections: mergeDefault("collections", map.get("collections")),
     contact: mergeDefault("contact", map.get("contact")),
+    footer: mergeDefault("footer", map.get("footer")),
     popup: mergeDefault("popup", map.get("popup")),
     announcement: mergeDefault("announcement", map.get("announcement")),
     season: mergeDefault("season", map.get("season")),

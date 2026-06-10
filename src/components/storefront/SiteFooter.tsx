@@ -4,20 +4,20 @@
 // /api/subscribe instead of PathosStore.pushSubscriber.
 import { useState, type ReactNode } from "react";
 import { InstaIcon, FbIcon, PinterestIcon, MailIcon, SendIcon } from "@/components/storefront/icons";
-import type { ContactSetting } from "@/lib/types";
+import type { ContactSetting, FooterColumn, FooterSetting } from "@/lib/types";
 
-function FooterCol({ title, links }: { title: string; links: string[] }) {
+function FooterCol({ column }: { column: FooterColumn }) {
   return (
     <div>
-      <h4 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-gold">{title}</h4>
+      <h4 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-gold">{column.title}</h4>
       <ul className="flex flex-col gap-2.5">
-        {links.map((l) => <li key={l}><a href="#" className="text-[13px] font-light tracking-wide text-[#e9dcc6]/75 transition-colors hover:text-[#f3ead9]">{l}</a></li>)}
+        {column.links.map((l) => <li key={l.label}><a href={l.href || "#"} className="text-[13px] font-light tracking-wide text-[#e9dcc6]/75 transition-colors hover:text-[#f3ead9]">{l.label}</a></li>)}
       </ul>
     </div>
   );
 }
 
-export function SiteFooter({ contact }: { contact: ContactSetting }) {
+export function SiteFooter({ contact, footer }: { contact: ContactSetting; footer: FooterSetting }) {
   const [email, setEmail] = useState("");
   const [done, setDone] = useState(false);
   const subscribe = async () => {
@@ -44,17 +44,15 @@ export function SiteFooter({ contact }: { contact: ContactSetting }) {
               <svg width="26" height="21" viewBox="0 0 30 24" fill="none"><path d="M6 2 H24 L28 8 L15 22 L2 8 Z" stroke="#b1894e" strokeWidth="1.1" strokeLinejoin="round" /><path d="M2 8 H28 M11 2 L8 8 L15 22 M19 2 L22 8 L15 22" stroke="#b1894e" strokeWidth="0.8" /></svg>
               <div className="leading-none"><div className="font-serif text-[19px] font-medium tracking-[0.22em]">PATHOS</div><div className="mt-1 font-serif text-[11px] italic tracking-wide text-gold">by Yeralis</div></div>
             </div>
-            <p className="mt-5 max-w-xs text-[13px] font-light leading-relaxed text-[#e9dcc6]/70">Handmade jewelry from the Aegean — gemstones, shells and minerals shaped into pieces made to last a lifetime.</p>
+            <p className="mt-5 max-w-xs text-[13px] font-light leading-relaxed text-[#e9dcc6]/70">{footer.tagline}</p>
             <div className="mt-6 flex gap-2.5">
               <Social href={contact.instagram || "#"} label="Instagram"><InstaIcon size={17} /></Social>
-              <Social href="#" label="Facebook"><FbIcon size={17} /></Social>
-              <Social href="#" label="Pinterest"><PinterestIcon size={17} /></Social>
+              <Social href={footer.facebook || "#"} label="Facebook"><FbIcon size={17} /></Social>
+              <Social href={footer.pinterest || "#"} label="Pinterest"><PinterestIcon size={17} /></Social>
               <Social href={`mailto:${contact.email}`} label="Email"><MailIcon size={17} /></Social>
             </div>
           </div>
-          <FooterCol title="Shop" links={["New In", "Bestsellers", "Collections", "Gift Cards", "Sale"]} />
-          <FooterCol title="About" links={["Our Story", "The Atelier", "Sustainability", "Journal", "Stockists"]} />
-          <FooterCol title="Help" links={["Contact Us", "Shipping & Returns", "Care Guide", "Size Guide", "FAQ"]} />
+          {footer.columns.map((col) => <FooterCol key={col.title} column={col} />)}
           {/* newsletter */}
           <div className="col-span-2 md:col-span-3 lg:col-span-1">
             <h4 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-gold">Join the list</h4>

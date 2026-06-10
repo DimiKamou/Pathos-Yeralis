@@ -72,6 +72,19 @@ const SETTINGS: { key: string; value: object }[] = [
     },
   },
   {
+    key: "footer",
+    value: {
+      tagline: "Handmade jewelry from the Aegean — gemstones, shells and minerals shaped into pieces made to last a lifetime.",
+      facebook: "",
+      pinterest: "",
+      columns: [
+        { title: "Shop", links: [{ label: "New In", href: "/collections/new-in" }, { label: "Bestsellers", href: "/shop" }, { label: "Collections", href: "/collections" }, { label: "Gift Cards", href: "/pages/gift-cards" }, { label: "Sale", href: "/shop" }] },
+        { title: "About", links: [{ label: "Our Story", href: "/about" }, { label: "The Atelier", href: "/about" }, { label: "Sustainability", href: "/pages/sustainability" }, { label: "Journal", href: "/pages/journal" }, { label: "Stockists", href: "/pages/stockists" }] },
+        { title: "Help", links: [{ label: "Contact Us", href: "/about" }, { label: "Shipping & Returns", href: "/pages/shipping-returns" }, { label: "Care Guide", href: "/pages/care-guide" }, { label: "Size Guide", href: "/pages/size-guide" }, { label: "FAQ", href: "/pages/faq" }] },
+      ],
+    },
+  },
+  {
     key: "popup",
     value: {
       enabled: true,
