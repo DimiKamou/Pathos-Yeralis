@@ -116,35 +116,50 @@ export async function createOrder(params: {
 }) {
   const { contact, priced, payment, method, stripePaymentIntentId } = params;
   const number = await nextOrderNumber();
-  return prisma.order.create({
-    data: {
-      number,
-      customer: contact.name || "Guest",
-      email: contact.email,
-      country: countryCode(contact.country),
-      subtotalCents: priced.subtotalCents,
-      shippingCents: priced.shippingCents,
-      totalCents: priced.totalCents,
-      payment,
-      method,
-      discountCode: priced.discount?.code ?? null,
-      discountPct: priced.discount?.pct ?? null,
-      discountCents: priced.discountCents || null,
-      shipAddress: contact.address ?? null,
-      shipCity: contact.city ?? null,
-      shipZip: contact.zip ?? null,
-      stripePaymentIntentId: stripePaymentIntentId ?? null,
-      lines: {
-        create: priced.lines.map((l) => ({
-          productId: l.productId,
-          art: l.art,
-          name: l.name,
-          variant: l.variant,
-          qty: l.qty,
-          priceCents: l.priceCents,
-        })),
+  // Create the order AND adjust inventory atomically: each line decrements its
+  // product's stock (floored at 0) and bumps `sold`. This is what keeps the
+  // admin Inventory/Products stock figures up to date automatically.
+  const [order] = await prisma.$transaction([
+    prisma.order.create({
+      data: {
+        number,
+        customer: contact.name || "Guest",
+        email: contact.email,
+        country: countryCode(contact.country),
+        subtotalCents: priced.subtotalCents,
+        shippingCents: priced.shippingCents,
+        totalCents: priced.totalCents,
+        payment,
+        method,
+        discountCode: priced.discount?.code ?? null,
+        discountPct: priced.discount?.pct ?? null,
+        discountCents: priced.discountCents || null,
+        shipAddress: contact.address ?? null,
+        shipCity: contact.city ?? null,
+        shipZip: contact.zip ?? null,
+        stripePaymentIntentId: stripePaymentIntentId ?? null,
+        lines: {
+          create: priced.lines.map((l) => ({
+            productId: l.productId,
+            art: l.art,
+            name: l.name,
+            variant: l.variant,
+            qty: l.qty,
+            priceCents: l.priceCents,
+          })),
+        },
       },
-    },
-    include: { lines: true },
-  });
+      include: { lines: true },
+    }),
+    ...priced.lines.map((l) =>
+      prisma.product.update({
+        where: { id: l.productId },
+        data: { stock: { decrement: l.qty }, sold: { increment: l.qty } },
+      }),
+    ),
+  ]);
+
+  // Guard against negative stock from races (SQLite has no per-row clamp).
+  await prisma.product.updateMany({ where: { stock: { lt: 0 } }, data: { stock: 0 } });
+  return order;
 }

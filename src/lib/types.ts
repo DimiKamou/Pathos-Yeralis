@@ -15,7 +15,8 @@ export interface StoreProduct {
   material: string | null;
   swatches: string[];
   desc: string | null;
-  imageUrl: string | null;
+  images: string[]; // gallery (uploaded photos)
+  imageUrl: string | null; // primary = images[0]
 }
 
 export interface CartLine {

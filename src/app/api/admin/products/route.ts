@@ -30,6 +30,7 @@ const schema = z.object({
   swatches: z.array(z.string()).default([]),
   desc: z.string().optional().nullable(),
   imageUrl: z.string().optional().nullable(),
+  images: z.array(z.string()).default([]),
 });
 
 export async function POST(req: Request) {
@@ -54,7 +55,8 @@ export async function POST(req: Request) {
       material: data.material ?? null,
       swatches: JSON.stringify(data.swatches),
       description: data.desc ?? null,
-      imageUrl: data.imageUrl ?? null,
+      images: JSON.stringify(data.images),
+      imageUrl: data.images[0] ?? data.imageUrl ?? null,
       position: count,
     },
   });

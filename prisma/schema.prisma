@@ -30,7 +30,8 @@ model Product {
   material   String?
   swatches   String   @default("[]") // JSON array of hex chips (portable across DBs)
   description String?
-  imageUrl   String? // uploaded photo; falls back to line-art when null
+  imageUrl   String? // primary photo (kept for back-compat = images[0])
+  images     String   @default("[]") // JSON array of uploaded photo URLs (gallery)
   position   Int      @default(0) // manual sort order in catalog/admin
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

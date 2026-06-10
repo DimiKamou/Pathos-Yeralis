@@ -15,6 +15,7 @@ const schema = z.object({
   swatches: z.array(z.string()).optional(),
   desc: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),
+  images: z.array(z.string()).optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -38,7 +39,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       ...(data.material !== undefined && { material: data.material }),
       ...(data.swatches !== undefined && { swatches: JSON.stringify(data.swatches) }),
       ...(data.desc !== undefined && { description: data.desc }),
-      ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
+      ...(data.images !== undefined && { images: JSON.stringify(data.images), imageUrl: data.images[0] ?? null }),
+      ...(data.imageUrl !== undefined && data.images === undefined && { imageUrl: data.imageUrl }),
     },
   });
   return NextResponse.json({ ok: true, product: serializeProduct(product) });
