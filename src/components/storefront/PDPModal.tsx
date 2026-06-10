@@ -25,11 +25,13 @@ export function PDPModal() {
   const { products, pdp, setPdp, add, setCartOpen, toggleWish, inWish } = useShop();
   const [variant, setVariant] = useState("");
   const [qty, setQty] = useState(1);
+  const [imgIdx, setImgIdx] = useState(0);
   useEffect(() => {
     if (pdp) {
       const v = variantsFor(pdp.art);
       setVariant(v ? v.opts[0] : "");
       setQty(1);
+      setImgIdx(0);
     }
   }, [pdp]);
   if (!pdp) return null;
@@ -44,13 +46,24 @@ export function PDPModal() {
       <div className="relative grid max-h-[92vh] w-full max-w-3xl grid-cols-1 overflow-hidden rounded-2xl bg-paper shadow-2xl md:grid-cols-2">
         <button onClick={() => setPdp(null)} className="absolute right-3 top-3 z-10 rounded-full bg-paper/70 p-2 text-ink/60 hover:text-ink" aria-label="Close"><CloseIcon size={18} /></button>
         <div className="relative flex items-center justify-center bg-sand/40 p-10">
-          {pdp.imageUrl ? (
-            <ProductMedia art={pdp.art} imageUrl={pdp.imageUrl} alt={pdp.name} imgClass="h-full w-full object-cover" />
+          {pdp.images.length > 0 ? (
+            <ProductMedia art={pdp.art} imageUrl={pdp.images[imgIdx] ?? pdp.images[0]} alt={pdp.name} imgClass="h-full w-full object-cover" />
           ) : (
             <div className="scale-[1.55]">{Art[pdp.art]}</div>
           )}
           <button onClick={() => toggleWish(pdp.id)} aria-label={saved ? "Remove from saved" : "Save piece"}
             className={`absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-paper/80 shadow-sm transition-colors ${saved ? "text-gold" : "text-ink/55 hover:text-ink"}`}><HeartIcon size={17} filled={saved} /></button>
+          {pdp.images.length > 1 && (
+            <div className="absolute inset-x-0 bottom-3 flex flex-wrap justify-center gap-2 px-3">
+              {pdp.images.map((url, i) => (
+                <button key={url} onClick={() => setImgIdx(i)} aria-label={`View photo ${i + 1}`}
+                  className={`h-11 w-11 overflow-hidden rounded-md border-2 transition-colors ${i === imgIdx ? "border-gold" : "border-white/70 hover:border-white"}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="overflow-y-auto p-8">
           <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">{pdp.collection}</div>
