@@ -25,7 +25,7 @@ export function Storefront({
         <Hero imageUrl={heroImage} />
         <ShopByCollection />
         <Carousel />
-        <VisitUs />
+        <VisitUs contact={settings.contact} />
         <Promo />
       </main>
     </StoreShell>

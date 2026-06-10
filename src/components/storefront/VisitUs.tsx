@@ -1,8 +1,9 @@
 "use client";
 
-// Visit-us / atelier map section. Ported verbatim from the prototype.
+// Visit-us / atelier map section. Contact + map come from admin settings.
 import type { ReactNode } from "react";
 import { PinIcon, ClockIcon, PhoneIcon, MailIcon } from "@/components/storefront/icons";
+import type { ContactSetting } from "@/lib/types";
 
 function InfoRow({ icon, label, children }: { icon: ReactNode; label: ReactNode; children: ReactNode }) {
   return (
@@ -16,7 +17,11 @@ function InfoRow({ icon, label, children }: { icon: ReactNode; label: ReactNode;
   );
 }
 
-export function VisitUs() {
+export function VisitUs({ contact }: { contact: ContactSetting }) {
+  const { mapLat: lat, mapLng: lng } = contact;
+  const bbox = `${lng - 0.0082}%2C${lat - 0.004}%2C${lng + 0.0082}%2C${lat + 0.004}`;
+  const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
+  const directions = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
   return (
     <section id="visit" className="mx-auto w-full max-w-[1240px] px-8 pt-28">
       <header className="mb-10 text-center">
@@ -38,19 +43,19 @@ export function VisitUs() {
             </svg>
             <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
               <span className="relative flex h-4 w-4"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold/50"></span><span className="relative inline-flex h-4 w-4 rounded-full bg-gold ring-4 ring-paper"></span></span>
-              <span className="mt-2 rounded-full bg-paper px-3 py-1 text-[11px] font-medium tracking-wide text-ink shadow-sm">12 Adrianou St · Pláka</span>
+              <span className="mt-2 rounded-full bg-paper px-3 py-1 text-[11px] font-medium tracking-wide text-ink shadow-sm">{contact.mapLabel}</span>
             </div>
           </div>
           <iframe title="PATHOS atelier location" className="relative block h-[300px] w-full lg:h-[420px]" loading="lazy"
-            src="https://www.openstreetmap.org/export/embed.html?bbox=23.7188%2C37.9676%2C23.7352%2C37.9756&layer=mapnik&marker=37.9716%2C23.7270"
+            src={mapSrc}
             style={{ border: 0, filter: "grayscale(0.25) sepia(0.12)", background: "transparent" }}></iframe>
         </div>
         <div className="flex flex-col justify-center gap-7 rounded-xl border border-ink/10 bg-paper p-8 lg:p-9">
-          <InfoRow icon={<PinIcon size={19} />} label="Atelier &amp; Showroom">12 Adrianou Street<br />Pláka, Athens 105 56, Greece</InfoRow>
-          <InfoRow icon={<ClockIcon size={19} />} label="Opening hours">Mon–Sat · 10:00–19:00<br />Sun · by appointment</InfoRow>
-          <InfoRow icon={<PhoneIcon size={18} />} label="Call us">+30 210 322 1180</InfoRow>
-          <InfoRow icon={<MailIcon size={18} />} label="Email">hello@pathos-jewelry.com</InfoRow>
-          <a href="https://www.openstreetmap.org/?mlat=37.9716&mlon=23.7270#map=17/37.9716/23.7270" target="_blank" rel="noopener"
+          <InfoRow icon={<PinIcon size={19} />} label="Atelier &amp; Showroom">{contact.addressLine1}<br />{contact.addressLine2}</InfoRow>
+          <InfoRow icon={<ClockIcon size={19} />} label="Opening hours">{contact.hoursLine1}<br />{contact.hoursLine2}</InfoRow>
+          <InfoRow icon={<PhoneIcon size={18} />} label="Call us"><a href={`tel:${contact.phone.replace(/\s/g, "")}`} className="hover:text-gold">{contact.phone}</a></InfoRow>
+          <InfoRow icon={<MailIcon size={18} />} label="Email"><a href={`mailto:${contact.email}`} className="hover:text-gold">{contact.email}</a></InfoRow>
+          <a href={directions} target="_blank" rel="noopener"
             className="mt-1 inline-flex w-fit items-center gap-2 border-b border-gold pb-1 text-[12px] font-medium uppercase tracking-[0.18em] text-gold transition-colors hover:text-ink hover:border-ink">
             Get directions →
           </a>

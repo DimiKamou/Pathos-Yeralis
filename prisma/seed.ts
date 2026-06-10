@@ -57,6 +57,21 @@ const SETTINGS: { key: string; value: object }[] = [
     value: ["New In", "Aegean", "Gemstones", "Shells & Corals", "Hematite", "Minerals", "Talismans", "Bridal", "Archive"],
   },
   {
+    key: "contact",
+    value: {
+      email: "hello@pathos-jewelry.com",
+      phone: "+30 210 322 1180",
+      addressLine1: "12 Adrianou Street",
+      addressLine2: "Pláka, Athens 105 56, Greece",
+      hoursLine1: "Mon–Sat · 10:00–19:00",
+      hoursLine2: "Sun · by appointment",
+      mapLat: 37.9716,
+      mapLng: 23.727,
+      mapLabel: "12 Adrianou St · Pláka",
+      instagram: "https://www.instagram.com/pathos_by_yeralis/",
+    },
+  },
+  {
     key: "popup",
     value: {
       enabled: true,

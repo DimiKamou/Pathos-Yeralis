@@ -4,6 +4,7 @@
 // /api/subscribe instead of PathosStore.pushSubscriber.
 import { useState, type ReactNode } from "react";
 import { InstaIcon, FbIcon, PinterestIcon, MailIcon, SendIcon } from "@/components/storefront/icons";
+import type { ContactSetting } from "@/lib/types";
 
 function FooterCol({ title, links }: { title: string; links: string[] }) {
   return (
@@ -16,7 +17,7 @@ function FooterCol({ title, links }: { title: string; links: string[] }) {
   );
 }
 
-export function SiteFooter() {
+export function SiteFooter({ contact }: { contact: ContactSetting }) {
   const [email, setEmail] = useState("");
   const [done, setDone] = useState(false);
   const subscribe = async () => {
@@ -45,10 +46,10 @@ export function SiteFooter() {
             </div>
             <p className="mt-5 max-w-xs text-[13px] font-light leading-relaxed text-[#e9dcc6]/70">Handmade jewelry from the Aegean — gemstones, shells and minerals shaped into pieces made to last a lifetime.</p>
             <div className="mt-6 flex gap-2.5">
-              <Social href="https://www.instagram.com/pathos_by_yeralis/" label="Instagram"><InstaIcon size={17} /></Social>
+              <Social href={contact.instagram || "#"} label="Instagram"><InstaIcon size={17} /></Social>
               <Social href="#" label="Facebook"><FbIcon size={17} /></Social>
               <Social href="#" label="Pinterest"><PinterestIcon size={17} /></Social>
-              <Social href="mailto:hello@pathos-jewelry.com" label="Email"><MailIcon size={17} /></Social>
+              <Social href={`mailto:${contact.email}`} label="Email"><MailIcon size={17} /></Social>
             </div>
           </div>
           <FooterCol title="Shop" links={["New In", "Bestsellers", "Collections", "Gift Cards", "Sale"]} />

@@ -6,6 +6,7 @@
 import { prisma } from "./prisma";
 import type {
   AnnouncementSetting,
+  ContactSetting,
   MenuItem,
   PopupSetting,
   SeasonSetting,
@@ -52,9 +53,25 @@ export const DEFAULT_SEASON: SeasonSetting = {
   auto: false,
 };
 
+// Atelier contact + map details shown in the storefront "Visit us" section,
+// footer and chat — all admin-editable.
+export const DEFAULT_CONTACT: ContactSetting = {
+  email: "hello@pathos-jewelry.com",
+  phone: "+30 210 322 1180",
+  addressLine1: "12 Adrianou Street",
+  addressLine2: "Pláka, Athens 105 56, Greece",
+  hoursLine1: "Mon–Sat · 10:00–19:00",
+  hoursLine2: "Sun · by appointment",
+  mapLat: 37.9716,
+  mapLng: 23.727,
+  mapLabel: "12 Adrianou St · Pláka",
+  instagram: "https://www.instagram.com/pathos_by_yeralis/",
+};
+
 export const DEFAULT_SETTINGS: StoreSettings = {
   menu: DEFAULT_MENU,
   collections: DEFAULT_COLLECTIONS,
+  contact: DEFAULT_CONTACT,
   popup: DEFAULT_POPUP,
   announcement: DEFAULT_ANNOUNCEMENT,
   season: DEFAULT_SEASON,
@@ -94,6 +111,7 @@ export async function getAllSettings(): Promise<StoreSettings> {
   return {
     menu: mergeDefault("menu", map.get("menu")),
     collections: mergeDefault("collections", map.get("collections")),
+    contact: mergeDefault("contact", map.get("contact")),
     popup: mergeDefault("popup", map.get("popup")),
     announcement: mergeDefault("announcement", map.get("announcement")),
     season: mergeDefault("season", map.get("season")),

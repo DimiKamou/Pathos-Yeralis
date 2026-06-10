@@ -68,9 +68,23 @@ export interface SeasonSetting {
   auto: boolean;
 }
 
+export interface ContactSetting {
+  email: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2: string;
+  hoursLine1: string;
+  hoursLine2: string;
+  mapLat: number;
+  mapLng: number;
+  mapLabel: string;
+  instagram: string;
+}
+
 export interface StoreSettings {
   menu: MenuItem[];
   collections: string[];
+  contact: ContactSetting;
   popup: PopupSetting;
   announcement: AnnouncementSetting;
   season: SeasonSetting;

@@ -72,7 +72,7 @@ export default async function AboutPage() {
             </div>
           </section>
 
-          <VisitUs />
+          <VisitUs contact={settings.contact} />
           <div className="pb-10" />
         </main>
       </StoreShell>

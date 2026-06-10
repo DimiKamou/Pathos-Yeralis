@@ -4,8 +4,9 @@
 // POSTs to /api/messages instead of PathosStore.pushMessage.
 import { useState } from "react";
 import { CloseIcon, MailIcon, SendIcon, ChatIcon } from "@/components/storefront/icons";
+import type { ContactSetting } from "@/lib/types";
 
-export function ChatWidget() {
+export function ChatWidget({ contact }: { contact: ContactSetting }) {
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", topic: "General", message: "" });
@@ -50,7 +51,7 @@ export function ChatWidget() {
               <input className={field} placeholder="Email *" value={form.email} onChange={(e) => set("email", e.target.value)} />
               <textarea className={field + " resize-none"} rows={3} placeholder="How can we help? *" value={form.message} onChange={(e) => set("message", e.target.value)}></textarea>
               <button onClick={submit} className="flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-gold py-2.5 text-[12.5px] font-medium tracking-wide text-white transition-colors hover:bg-gold/90"><SendIcon size={15} />Send message</button>
-              <p className="text-center text-[11px] font-light text-mute">Prefer email? <a href="mailto:hello@pathos-jewelry.com" className="text-gold hover:underline">hello@pathos-jewelry.com</a></p>
+              <p className="text-center text-[11px] font-light text-mute">Prefer email? <a href={`mailto:${contact.email}`} className="text-gold hover:underline">{contact.email}</a></p>
             </div>
           )}
         </div>

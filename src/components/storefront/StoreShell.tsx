@@ -38,8 +38,8 @@ export function StoreShell({
           <Nav menu={settings.menu} collections={settings.collections} />
         </header>
         {children}
-        <SiteFooter />
-        <ChatWidget />
+        <SiteFooter contact={settings.contact} />
+        <ChatWidget contact={settings.contact} />
         <EntryPopup popup={settings.popup} />
         <PDPModal />
         <WishDrawer />
