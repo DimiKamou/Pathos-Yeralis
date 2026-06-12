@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ──────────────────────────────────────────────────────────────────────────
+   PATHOS v2 — "jewelry as feeling"
+   Cool marble + a deep Hellenistic garnet. A deliberate counter to the
+   original's warm cream/serif/gold. Tokens are rgb triplets so Tailwind can
+   apply alpha; dark sections re-map a couple locally via .on-night.
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  --c-marble: 232 233 228; /* #E8E9E4 page ground (cool stone, not cream) */
+  --c-chalk: 244 244 241; /* #F4F4F1 raised cards */
+  --c-stone: 201 203 195; /* #C9CBC3 panels / vitrine fill */
+  --c-ash: 122 126 119; /* #7A7E77 muted text / captions */
+  --c-slate: 38 41 42; /* #26292A ink text */
+  --c-night: 24 27 28; /* #181B1C dark sections (hero / footer) */
+  --c-garnet: 122 31 43; /* #7A1F2B the accent */
+  --c-patina: 94 110 99; /* #5E6E63 whisper accent */
+}
+
+html,
+body {
+  background: rgb(var(--c-marble));
+  color: rgb(var(--c-slate));
+}
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Selection in garnet — a small, consistent brand touch. */
+::selection {
+  background: rgb(var(--c-garnet));
+  color: rgb(var(--c-chalk));
+}
+
+/* Visible keyboard focus everywhere (quality floor). */
+:focus-visible {
+  outline: 2px solid rgb(var(--c-garnet));
+  outline-offset: 2px;
+}
+
+/* Thin stone scrollbar. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--c-stone));
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ── The hero wordmark "strikes" in, letter by letter (engraving feel). ── */
+.strike-letter {
+  display: inline-block;
+  opacity: 0;
+  animation: strike 0.62s cubic-bezier(0.16, 0.84, 0.44, 1) forwards;
+}
+@keyframes strike {
+  from {
+    opacity: 0;
+    transform: translateY(0.42em);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Scroll-reveal helper (toggled by the <Reveal> component). ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+/* The meander (Greek key) hairline used as a quiet structural divider. */
+.meander-rule {
+  height: 6px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgb(var(--c-garnet)) 0 2px,
+    transparent 2px 10px
+  );
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strike-letter,
+  .reveal,
+  .reveal.is-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
