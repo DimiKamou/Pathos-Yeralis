@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PATHOS by Yeralis — Storefront Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper:#f6f0e6; --card:#fffdf8; --ink:#2a241e; --mute:#9c8e7c; --gold:#b1894e; --line:#e6dcca;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:"Jost",system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+    line-height:1.55;
+  }
+  .wrap { max-width:1120px; margin:0 auto; padding:0 28px; }
+  a { color:inherit; }
+  .serif { font-family:"Cormorant Garamond",Georgia,serif; }
+
+  header.hero { padding:84px 0 36px; text-align:center; }
+  .eyebrow { font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--gold); }
+  h1 { font-family:"Cormorant Garamond",serif; font-weight:500; font-size:clamp(38px,6vw,66px); line-height:1.04; margin:.3em 0 .15em; }
+  .lede { max-width:620px; margin:14px auto 0; color:#6f6354; font-size:15px; font-weight:300; }
+  .rule { width:40px; height:1px; background:var(--gold); margin:26px auto 0; }
+
+  .grid { display:grid; gap:22px; grid-template-columns:repeat(3,1fr); padding:36px 0 8px; }
+  @media (max-width:860px){ .grid { grid-template-columns:1fr; } }
+
+  .card {
+    background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden;
+    display:flex; flex-direction:column; transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .card:hover { transform:translateY(-3px); box-shadow:0 24px 50px -28px rgba(80,60,30,.4); }
+  .swatches { display:flex; height:64px; }
+  .swatches span { flex:1; }
+  .card .body { padding:22px 22px 24px; display:flex; flex-direction:column; flex:1; }
+  .tag { font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--mute); }
+  .card h2 { font-family:"Cormorant Garamond",serif; font-weight:600; font-size:27px; margin:6px 0 2px; }
+  .pitch { font-size:13.5px; color:#6f6354; font-weight:300; min-height:42px; }
+  ul { list-style:none; margin:14px 0 0; padding:0; }
+  li { font-size:12.5px; padding:5px 0 5px 18px; position:relative; color:#4f463a; border-top:1px solid #f0e8d8; }
+  li:before { content:""; position:absolute; left:2px; top:12px; width:5px; height:5px; background:var(--gold); border-radius:50%; }
+  .open {
+    margin-top:18px; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--ink); color:var(--paper); text-decoration:none; padding:12px 18px; border-radius:999px;
+    font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; font-weight:500;
+  }
+  .open:hover { background:#3a3025; }
+  .open.ghost { background:transparent; color:var(--ink); border:1px solid var(--ink); }
+  .open.ghost:hover { background:rgba(42,36,30,.05); }
+
+  .admin {
+    margin:30px 0 0; background:#2a241e; color:#f3ead9; border-radius:14px;
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:18px; padding:26px 30px;
+  }
+  .admin h3 { font-family:"Cormorant Garamond",serif; font-weight:500; font-size:26px; margin:0 0 4px; }
+  .admin p { margin:0; font-size:13px; font-weight:300; color:#cdbfa6; max-width:560px; }
+  .admin .open { background:var(--gold); color:#2a241e; }
+  .admin .open:hover { background:#c79a58; }
+
+  .note { text-align:center; color:var(--mute); font-size:12.5px; font-weight:300; padding:40px 0 70px; }
+  .note b { color:#6f6354; font-weight:500; }
+  .foot { border-top:1px solid var(--line); padding:22px 0 60px; text-align:center; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div class="eyebrow">PATHOS by Yeralis</div>
+      <h1>Three directions<br/>for the storefront</h1>
+      <p class="lede">The same shop — same pieces, same cart and checkout — shown in three different looks. Click any one to explore it live. Everything is interactive.</p>
+      <div class="rule"></div>
+    </header>
+
+    <section class="grid">
+      <!-- ORIGINAL -->
+      <article class="card">
+        <div class="swatches"><span style="background:#f6f0e6"></span><span style="background:#ece2d2"></span><span style="background:#b1894e"></span><span style="background:#2a241e"></span></div>
+        <div class="body">
+          <div class="tag">Where we are today</div>
+          <h2 class="serif">The Original</h2>
+          <div class="pitch">Warm, editorial and gallery-like — cream paper, a serif wordmark, and a single antique-gold accent.</div>
+          <ul>
+            <li>Cream &amp; gold · Cormorant serif</li>
+            <li>Shop-by-collection storefront</li>
+            <li>The current, familiar look</li>
+          </ul>
+          <a class="open" href="original/index.html" target="_blank" rel="noopener">Open preview ↗</a>
+        </div>
+      </article>
+
+      <!-- V2 -->
+      <article class="card">
+        <div class="swatches"><span style="background:#E8E9E4"></span><span style="background:#C9CBC3"></span><span style="background:#7A1F2B"></span><span style="background:#26292A"></span></div>
+        <div class="body">
+          <div class="tag">The statement</div>
+          <h2 class="serif">v2 — Jewelry as Feeling</h2>
+          <div class="pitch">A bold rebrand: cool marble and deep garnet, with the catalogue arranged by feeling rather than category.</div>
+          <ul>
+            <li>Marble &amp; garnet · Greek display type</li>
+            <li>Grouped by ΕΡΩΣ · ΣΤΟΡΓΗ · ΠΟΘΟΣ</li>
+            <li>High differentiation, a real leap</li>
+          </ul>
+          <a class="open" href="v2/index.html" target="_blank" rel="noopener">Open preview ↗</a>
+        </div>
+      </article>
+
+      <!-- V3 -->
+      <article class="card">
+        <div class="swatches"><span style="background:#F4F1EA"></span><span style="background:#EBE5DA"></span><span style="background:#A9824A"></span><span style="background:#211C16"></span></div>
+        <div class="body">
+          <div class="tag">The safe evolution</div>
+          <h2 class="serif">v3 — The Quiet Edit</h2>
+          <div class="pitch">A minimalist refinement of the original: the same warm soul, calmer and more premium, with lots of air.</div>
+          <ul>
+            <li>Porcelain &amp; ink · light editorial serif</li>
+            <li>Clean catalogue, filtered by collection</li>
+            <li>Low risk, a tidy step up</li>
+          </ul>
+          <a class="open" href="v3/index.html" target="_blank" rel="noopener">Open preview ↗</a>
+        </div>
+      </article>
+    </section>
+
+    <section class="admin">
+      <div>
+        <h3 class="serif">The back-office</h3>
+        <p>Behind every version is the same admin: orders, products &amp; inventory, the message inbox, subscribers, discounts, seasonal themes and store settings. Here's a read-only walkthrough with sample data.</p>
+      </div>
+      <a class="open" href="admin/index.html" target="_blank" rel="noopener">Open admin demo ↗</a>
+    </section>
+
+    <p class="note">These are <b>design previews</b>. The shopping experience — browsing, cart, wishlist, discounts and the 3-step checkout — is <b>identical</b> in all three; only the look and feel differ. Pick the direction that feels right and we build it out for real.</p>
+
+    <div class="foot">PATHOS by Yeralis · Handmade in Athens</div>
+  </div>
+</body>
+</html>

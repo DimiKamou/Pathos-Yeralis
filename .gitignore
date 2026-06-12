@@ -14,6 +14,7 @@ next-env.d.ts
 # misc
 .DS_Store
 *.pem
+customer-preview.zip
 
 # debug
 npm-debug.log*
