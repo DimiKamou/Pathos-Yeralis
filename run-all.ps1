@@ -1,15 +1,15 @@
 <#
-  run-all.ps1 — launch all three PATHOS storefronts at once.
+  run-all.ps1 - launch all three PATHOS storefronts at once.
 
-  Opens three separate PowerShell windows — the original site plus the two
-  redesign prototypes — installs dependencies on first run, and opens each in
+  Opens three separate PowerShell windows - the original site plus the two
+  redesign prototypes - installs dependencies on first run, and opens each in
   your browser as soon as it's ready.
 
       original   http://localhost:3000   (admin at /admin)
       v2 (bold)  http://localhost:3100
       v3 (quiet) http://localhost:3200
 
-  USAGE — from the repo root:
+  USAGE - from the repo root:
       .\run-all.ps1                 # launch all three + open browser tabs
       .\run-all.ps1 -NoBrowser      # launch only, don't open the browser
       .\run-all.ps1 -Only v2,v3     # launch a subset
@@ -84,7 +84,7 @@ function Wait-Port {
 }
 
 Write-Host ''
-Write-Host '  PATHOS — launching the storefront(s)' -ForegroundColor Magenta
+Write-Host '  PATHOS - launching the storefront(s)' -ForegroundColor Magenta
 Write-Host '  -----------------------------------' -ForegroundColor Magenta
 foreach ($a in $apps) { Write-Host ("   {0,-18} http://localhost:{1}" -f $a.Title, $a.Port) }
 Write-Host ''
@@ -101,7 +101,7 @@ if (-not $NoBrowser) {
       Start-Process "http://localhost:$($a.Port)"
       Write-Host "  opened http://localhost:$($a.Port)  ($($a.Title))" -ForegroundColor Green
     } else {
-      Write-Host "  http://localhost:$($a.Port) didn't come up in time — check its window for errors." -ForegroundColor Yellow
+      Write-Host "  http://localhost:$($a.Port) didn't come up in time - check its window for errors." -ForegroundColor Yellow
     }
   }
 }
