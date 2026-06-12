@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ──────────────────────────────────────────────────────────────────────────
+   PATHOS v3 — "the quiet edit"
+   Minimalist, in the warm spirit of the original: porcelain cream, warm ink,
+   a single whisper of gold. We keep the v2 token *names* but remap the values,
+   so the shared overlays inherit this palette automatically.
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  --c-marble: 244 241 234; /* #F4F1EA porcelain page */
+  --c-chalk: 251 249 244; /* #FBF9F4 raised surfaces */
+  --c-stone: 235 229 218; /* #EBE5DA warm panel / hairline fill */
+  --c-ash: 143 134 121; /* #8F8679 warm muted text */
+  --c-slate: 33 28 22; /* #211C16 warm ink (text, primary buttons) */
+  --c-night: 28 24 19; /* #1C1813 dark warm (announcement, scrims) */
+  --c-garnet: 169 130 74; /* #A9824A antique gold — the only accent, used sparingly */
+  --c-patina: 122 110 92; /* warm taupe whisper */
+}
+
+html,
+body {
+  background: rgb(var(--c-marble));
+  color: rgb(var(--c-slate));
+}
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(var(--c-garnet) / 0.22);
+  color: rgb(var(--c-slate));
+}
+
+/* Quiet, precise focus ring — minimalism lives in the details. */
+:focus-visible {
+  outline: 1.5px solid rgb(var(--c-slate));
+  outline-offset: 3px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--c-stone));
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Scroll-reveal (used very gently here). */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal.is-in {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
