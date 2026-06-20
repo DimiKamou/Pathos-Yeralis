@@ -46,7 +46,7 @@ export function StoreShell({
         <PDPModal />
         <WishDrawer />
         <CartDrawer />
-        <Checkout bank={bank} />
+        <Checkout bank={bank} commerce={settings.commerce} />
         <OverlayManager />
         <CookieConsent />
       </div>

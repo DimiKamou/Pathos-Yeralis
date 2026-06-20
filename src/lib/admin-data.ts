@@ -36,6 +36,16 @@ export interface AdminDiscount {
   freeShip: boolean;
   active: boolean;
 }
+export interface AdminReview {
+  id: string;
+  productId: string;
+  productName: string;
+  rating: number;
+  name: string;
+  body: string;
+  approved: boolean;
+  createdAt: string;
+}
 
 export async function getOrders(): Promise<ClientOrder[]> {
   const rows = await prisma.order.findMany({ orderBy: { createdAt: "desc" }, include: { lines: true } });
@@ -81,4 +91,21 @@ export async function getCampaigns(): Promise<AdminCampaign[]> {
 export async function getDiscounts(): Promise<AdminDiscount[]> {
   const rows = await prisma.discount.findMany({ orderBy: { code: "asc" } });
   return rows.map((d) => ({ code: d.code, pct: d.pct, label: d.label, freeShip: d.freeShip, active: d.active }));
+}
+
+export async function getReviews(): Promise<AdminReview[]> {
+  const rows = await prisma.review.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { product: { select: { name: true } } },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    productId: r.productId,
+    productName: r.product?.name ?? "—",
+    rating: r.rating,
+    name: r.name,
+    body: r.body,
+    approved: r.approved,
+    createdAt: r.createdAt.toISOString(),
+  }));
 }

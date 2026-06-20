@@ -11,6 +11,171 @@ import { ArtBox, ProductMedia } from "@/components/storefront/product-art";
 import { useShop, variantsFor } from "@/components/storefront/shop-context";
 import { NotifyForm } from "@/components/storefront/NotifyForm";
 
+interface PublicReview {
+  id: string;
+  rating: number;
+  name: string;
+  body: string;
+  createdAt: string;
+}
+
+function fmtReviewDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-IE", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// Gold stars; `value` may be fractional for the average display.
+function StarRow({ value, size = 14 }: { value: number; size?: number }) {
+  const pct = Math.max(0, Math.min(100, (value / 5) * 100));
+  return (
+    <span className="relative inline-block leading-none" style={{ fontSize: size }} aria-hidden>
+      <span className="text-ink/15">★★★★★</span>
+      <span className="absolute inset-0 overflow-hidden text-gold" style={{ width: `${pct}%` }}>
+        ★★★★★
+      </span>
+    </span>
+  );
+}
+
+function StarPicker({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange(n)}
+          aria-label={`${n} star${n === 1 ? "" : "s"}`}
+          className={`text-[20px] leading-none transition-colors ${n <= value ? "text-gold" : "text-ink/20 hover:text-gold/60"}`}
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ReviewsSection({ productId }: { productId: string }) {
+  const [reviews, setReviews] = useState<PublicReview[]>([]);
+  const [name, setName] = useState("");
+  const [rating, setRating] = useState(5);
+  const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    setReviews([]);
+    setDone(false);
+    setError("");
+    setName("");
+    setRating(5);
+    setBody("");
+    fetch(`/api/reviews?productId=${encodeURIComponent(productId)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled) setReviews(d.reviews || []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [productId]);
+
+  const count = reviews.length;
+  const avg = count ? reviews.reduce((s, r) => s + r.rating, 0) / count : 0;
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !body.trim()) {
+      setError("Please add your name and a few words.");
+      return;
+    }
+    setSending(true);
+    setError("");
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, rating, name: name.trim(), body: body.trim() }),
+      });
+      if (!res.ok) throw new Error();
+      setDone(true);
+      setName("");
+      setBody("");
+      setRating(5);
+    } catch {
+      setError("Something went wrong — please try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="mt-7 border-t border-ink/10 pt-5">
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-mute">Reviews</div>
+        {count > 0 && (
+          <div className="flex items-center gap-1.5 text-[12px] text-mute">
+            <StarRow value={avg} />
+            <span className="text-ink">{avg.toFixed(1)}</span>
+            <span>· {count} review{count === 1 ? "" : "s"}</span>
+          </div>
+        )}
+      </div>
+
+      {count > 0 && (
+        <div className="mt-4 space-y-4">
+          {reviews.map((r) => (
+            <div key={r.id} className="border-b border-ink/[0.06] pb-4 last:border-0 last:pb-0">
+              <div className="flex items-center gap-2">
+                <StarRow value={r.rating} size={12} />
+                <span className="text-[12.5px] font-medium text-ink">{r.name}</span>
+                <span className="ml-auto text-[11px] font-light text-mute">{fmtReviewDate(r.createdAt)}</span>
+              </div>
+              <p className="mt-1.5 text-[13px] font-light leading-relaxed text-mute">{r.body}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {done ? (
+        <p className="mt-4 rounded-lg bg-gold/10 px-3.5 py-3 text-[12.5px] font-light text-ink">
+          Thanks — your review is pending approval.
+        </p>
+      ) : (
+        <form onSubmit={submit} className="mt-5">
+          <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-mute">Write a review</div>
+          <div className="mt-3">
+            <StarPicker value={rating} onChange={setRating} />
+          </div>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+            className="mt-3 w-full rounded-lg border border-ink/15 bg-paper px-3 py-2 text-[13px] text-ink placeholder:text-mute focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
+          />
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="What did you think?"
+            rows={3}
+            className="mt-2 w-full resize-none rounded-lg border border-ink/15 bg-paper px-3 py-2 text-[13px] text-ink placeholder:text-mute focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
+          />
+          {error && <p className="mt-2 text-[11.5px] text-red-600">{error}</p>}
+          <button
+            type="submit"
+            disabled={sending}
+            className="mt-3 rounded-full bg-ink px-5 py-2.5 text-[11.5px] font-medium uppercase tracking-[0.16em] text-paper transition-colors hover:bg-ink/90 disabled:opacity-50"
+          >
+            {sending ? "Submitting…" : "Submit review"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function Swatches({ colors }: { colors: string[] }) {
   return (
     <div className="mt-3 flex items-center gap-1.5">
@@ -115,6 +280,7 @@ export function PDPModal() {
               </div>
             </div>
           )}
+          <ReviewsSection productId={pdp.id} />
         </div>
       </div>
     </div>

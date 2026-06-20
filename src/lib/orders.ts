@@ -3,10 +3,8 @@
 // this is the single source of truth for money at checkout.
 import { prisma } from "./prisma";
 import { checkDiscount } from "./discounts";
+import { getSetting } from "./settings";
 import type { DiscountResult } from "./types";
-
-export const SHIPPING_FLAT_CENTS = 500; // €5 flat, ported from the prototype
-export const FREE_SHIPPING_THRESHOLD_CENTS = 10000; // €100
 
 export interface CartInput {
   id: string;
@@ -29,6 +27,8 @@ export interface PricedCart {
   discount: DiscountResult | null;
   discountCents: number;
   shippingCents: number;
+  taxCents: number;
+  taxIncluded: boolean;
   totalCents: number;
   allAvailable: boolean;
   unavailable: { name: string; reason: string }[];
@@ -58,15 +58,30 @@ export async function priceCart(
     lines.push({ productId: p.id, art: p.art, name, variant, qty, priceCents: p.priceCents });
   }
 
+  const commerce = await getSetting("commerce");
+
   const subtotalCents = lines.reduce((s, l) => s + l.priceCents * l.qty, 0);
   const discount = await checkDiscount(discountCode);
   const discountCents = discount ? Math.round(subtotalCents * discount.pct) : 0;
   const freeShip = !!(discount && discount.freeShip);
   const shippingCents =
-    subtotalCents >= FREE_SHIPPING_THRESHOLD_CENTS || freeShip || subtotalCents === 0
+    subtotalCents >= commerce.freeShipThresholdCents || freeShip || subtotalCents === 0
       ? 0
-      : SHIPPING_FLAT_CENTS;
-  const totalCents = Math.max(0, subtotalCents - discountCents) + shippingCents;
+      : commerce.shippingFlatCents;
+
+  // Tax is computed on the subtotal after discount. When prices already include
+  // tax it's purely informational (the extracted portion); otherwise it's added
+  // on top of the total. Shipping is left untaxed to match the prototype.
+  const taxIncluded = commerce.taxIncluded;
+  const rate = commerce.taxRatePct > 0 ? commerce.taxRatePct / 100 : 0;
+  const taxableBase = Math.max(0, subtotalCents - discountCents);
+  const taxCents =
+    rate <= 0
+      ? 0
+      : taxIncluded
+        ? Math.round(taxableBase - taxableBase / (1 + rate))
+        : Math.round(taxableBase * rate);
+  const totalCents = taxableBase + shippingCents + (taxIncluded ? 0 : taxCents);
 
   return {
     lines,
@@ -74,6 +89,8 @@ export async function priceCart(
     discount,
     discountCents,
     shippingCents,
+    taxCents,
+    taxIncluded,
     totalCents,
     allAvailable: unavailable.length === 0,
     unavailable,
@@ -141,6 +158,7 @@ export async function createOrder(params: {
             country: countryCode(contact.country),
             subtotalCents: priced.subtotalCents,
             shippingCents: priced.shippingCents,
+            taxCents: priced.taxCents,
             totalCents: priced.totalCents,
             payment,
             method,

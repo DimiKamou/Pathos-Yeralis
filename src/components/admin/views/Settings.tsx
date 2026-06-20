@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/admin/icons";
-import type { ContactSetting, FooterSetting } from "@/lib/types";
-import { Card, PageHeader, Btn, IconBtn, Field, TextInput, TextArea, Spinner, type ViewProps } from "./_shared";
+import type { CommerceSetting, ContactSetting, FooterSetting } from "@/lib/types";
+import { Card, PageHeader, Btn, IconBtn, Field, TextInput, TextArea, Toggle, Spinner, type ViewProps } from "./_shared";
 
 export function Settings({ adminName, adminEmail, go }: ViewProps) {
   const [contact, setContact] = useState<ContactSetting | null>(null);
   const [footer, setFooter] = useState<FooterSetting | null>(null);
+  const [commerce, setCommerce] = useState<CommerceSetting | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -17,10 +18,11 @@ export function Settings({ adminName, adminEmail, go }: ViewProps) {
       .then((d) => {
         setContact(d.settings?.contact ?? null);
         setFooter(d.settings?.footer ?? null);
+        setCommerce(d.settings?.commerce ?? null);
       });
   }, []);
 
-  async function save(key: "contact" | "footer", value: unknown) {
+  async function save(key: "contact" | "footer" | "commerce", value: unknown) {
     setSaving(key);
     setSaved(false);
     await fetch("/api/admin/settings", {
@@ -39,6 +41,9 @@ export function Settings({ adminName, adminEmail, go }: ViewProps) {
   }
 
   const setC = (patch: Partial<ContactSetting>) => contact && setContact({ ...contact, ...patch });
+
+  // tax & shipping helper
+  const setCom = (patch: Partial<CommerceSetting>) => commerce && setCommerce({ ...commerce, ...patch });
 
   // footer helpers
   const setF = (patch: Partial<FooterSetting>) => footer && setFooter({ ...footer, ...patch });
@@ -130,6 +135,55 @@ export function Settings({ adminName, adminEmail, go }: ViewProps) {
           <div className="mt-5 flex justify-end">
             <Btn variant="primary" onClick={() => save("footer", footer)} disabled={saving === "footer"}>
               {saving === "footer" ? "Saving…" : "Save footer"}
+            </Btn>
+          </div>
+        </Card>
+      )}
+
+      {/* ── Tax & shipping ── */}
+      {commerce && (
+        <Card className="mb-4 p-6">
+          <div className="mb-4 font-serif text-[18px] font-semibold text-ink">Tax &amp; shipping</div>
+          <p className="mb-5 max-w-2xl text-[12.5px] text-mute">Applied at checkout for every order. Set the tax rate to 0% to hide the tax line entirely.</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Tax rate (%)">
+              <TextInput
+                type="number"
+                step="any"
+                min={0}
+                value={commerce.taxRatePct}
+                onChange={(e) => setCom({ taxRatePct: Number(e.target.value) })}
+              />
+            </Field>
+            <div className="flex items-end pb-2">
+              <Toggle
+                checked={commerce.taxIncluded}
+                onChange={(v) => setCom({ taxIncluded: v })}
+                label="Prices already include tax"
+              />
+            </div>
+            <Field label="Flat shipping (€)">
+              <TextInput
+                type="number"
+                step="any"
+                min={0}
+                value={commerce.shippingFlatCents / 100}
+                onChange={(e) => setCom({ shippingFlatCents: Math.round(Number(e.target.value) * 100) })}
+              />
+            </Field>
+            <Field label="Free shipping over (€)">
+              <TextInput
+                type="number"
+                step="any"
+                min={0}
+                value={commerce.freeShipThresholdCents / 100}
+                onChange={(e) => setCom({ freeShipThresholdCents: Math.round(Number(e.target.value) * 100) })}
+              />
+            </Field>
+          </div>
+          <div className="mt-5 flex justify-end">
+            <Btn variant="primary" onClick={() => save("commerce", commerce)} disabled={saving === "commerce"}>
+              {saving === "commerce" ? "Saving…" : "Save tax & shipping"}
             </Btn>
           </div>
         </Card>

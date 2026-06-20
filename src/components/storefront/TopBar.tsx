@@ -61,9 +61,48 @@ function IconBadge({ children, count, onClick }: { children: React.ReactNode; co
   );
 }
 
+// Live-results dropdown shared by the desktop bar and the mobile search row.
+function SearchResults({
+  results,
+  query,
+  onPick,
+  className = "",
+}: {
+  results: StoreProduct[];
+  query: string;
+  onPick: (p: StoreProduct) => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`z-40 overflow-hidden rounded-xl border border-ink/12 bg-paper py-2 shadow-[0_24px_60px_-24px_rgba(80,60,30,0.4)] ${className}`}
+    >
+      {results.length === 0 ? (
+        <div className="px-4 py-5 text-center text-[12.5px] font-light text-mute">No pieces match “{query.trim()}”</div>
+      ) : (
+        results.map((p) => (
+          <button
+            key={p.id}
+            onMouseDown={() => onPick(p)}
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-ink/[0.03]"
+          >
+            <ArtBox art={p.art} imageUrl={p.imageUrl} box="h-11 w-11" scale="scale-[0.34]" alt={p.name} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[13px] text-ink">{p.name}</span>
+              <span className="block text-[11px] font-light text-mute">{p.collection}</span>
+            </span>
+            <span className="text-[12.5px] font-light text-mute">{eur(p.price)}</span>
+          </button>
+        ))
+      )}
+    </div>
+  );
+}
+
 export function TopBar() {
   const { products, count, setCartOpen, wishCount, setWishOpen, query, setQuery, setPdp } = useShop();
   const [focus, setFocus] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const q = query.trim().toLowerCase();
   const results = q
     ? products
@@ -78,10 +117,11 @@ export function TopBar() {
     setPdp(p);
     setQuery("");
     setFocus(false);
+    setMobileOpen(false);
   };
   return (
-    <div className="mx-auto grid w-full max-w-[1240px] grid-cols-[1fr_auto_1fr] items-center gap-6 px-8 py-7">
-      {/* search */}
+    <div className="relative mx-auto grid w-full max-w-[1240px] grid-cols-[1fr_auto_1fr] items-center gap-6 px-8 py-7">
+      {/* search — desktop */}
       <div className="hidden md:block">
         <div className="relative max-w-[260px]">
           <div className="flex items-center gap-2 border-b border-ink/20 pb-1.5">
@@ -96,29 +136,19 @@ export function TopBar() {
             />
             <SearchIcon size={17} className="shrink-0 text-mute" />
           </div>
-          {focus && q && (
-            <div className="absolute left-0 top-[calc(100%+10px)] z-40 w-[320px] overflow-hidden rounded-xl border border-ink/12 bg-paper py-2 shadow-[0_24px_60px_-24px_rgba(80,60,30,0.4)]">
-              {results.length === 0 ? (
-                <div className="px-4 py-5 text-center text-[12.5px] font-light text-mute">No pieces match “{query.trim()}”</div>
-              ) : (
-                results.map((p) => (
-                  <button
-                    key={p.id}
-                    onMouseDown={() => openResult(p)}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-ink/[0.03]"
-                  >
-                    <ArtBox art={p.art} imageUrl={p.imageUrl} box="h-11 w-11" scale="scale-[0.34]" alt={p.name} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] text-ink">{p.name}</span>
-                      <span className="block text-[11px] font-light text-mute">{p.collection}</span>
-                    </span>
-                    <span className="text-[12.5px] font-light text-mute">{eur(p.price)}</span>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
+          {focus && q && <SearchResults results={results} query={query} onPick={openResult} className="absolute left-0 top-[calc(100%+10px)] w-[320px]" />}
         </div>
+      </div>
+      {/* search — mobile toggle */}
+      <div className="md:hidden">
+        <button
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label={mobileOpen ? "Close search" : "Search"}
+          aria-expanded={mobileOpen}
+          className="p-1 text-ink/80 hover:text-ink transition-colors"
+        >
+          <SearchIcon size={20} />
+        </button>
       </div>
       {/* logo */}
       <div className="flex justify-center md:col-start-2">
@@ -137,6 +167,27 @@ export function TopBar() {
           <BagIcon size={20} />
         </IconBadge>
       </div>
+      {/* search — mobile full-width row under the bar */}
+      {mobileOpen && (
+        <div className="absolute left-0 right-0 top-full z-40 border-b border-ink/20 bg-paper px-8 pb-4 md:hidden">
+          <div className="relative">
+            <div className="flex items-center gap-2 border-b border-ink/20 pb-1.5">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setFocus(true)}
+                onBlur={() => setTimeout(() => setFocus(false), 150)}
+                placeholder="Search anything…"
+                autoFocus
+                className="w-full bg-transparent text-[13px] font-light tracking-wide text-ink placeholder:text-mute/80 focus:outline-none"
+              />
+              <SearchIcon size={17} className="shrink-0 text-mute" />
+            </div>
+            {q && <SearchResults results={results} query={query} onPick={openResult} className="absolute left-0 right-0 top-[calc(100%+10px)]" />}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

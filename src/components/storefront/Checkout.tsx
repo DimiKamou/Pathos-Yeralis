@@ -20,6 +20,7 @@ import { DiscountField } from "./DiscountField";
 import { getStripePromise, elementsAppearance } from "./stripe-client";
 import { BankIcon, CardIcon, CloseIcon, CopyIcon, LockIcon } from "./icons";
 import type { BankDetails } from "@/lib/bank";
+import type { CommerceSetting } from "@/lib/types";
 import type { ClientOrder } from "@/lib/order-serialize";
 
 const COUNTRY_CODE: Record<string, string> = {
@@ -54,7 +55,7 @@ function CheckBig() {
 
 const stripePromise = getStripePromise();
 
-export function Checkout({ bank }: { bank: BankDetails }) {
+export function Checkout({ bank, commerce }: { bank: BankDetails; commerce: CommerceSetting }) {
   const { checkout, setCheckout, items, subtotal, clear, discount, discountAmount, freeShipCode } = useShop();
   const [step, setStep] = useState(0);
   const [info, setInfo] = useState<Info>({ name: "", email: "", address: "", city: "", zip: "", country: "Greece" });
@@ -68,8 +69,21 @@ export function Checkout({ bank }: { bank: BankDetails }) {
   const [placing, setPlacing] = useState(false);
   const [payError, setPayError] = useState("");
 
-  const shipping = subtotal >= 100 || freeShipCode ? 0 : 5;
-  const total = Math.max(0, subtotal - discountAmount) + shipping;
+  // Mirror the server's priceCart math (lib/orders.ts) so the displayed totals
+  // match what's actually charged. Money here is in euros; the server is the
+  // source of truth in cents.
+  const freeShipOver = commerce.freeShipThresholdCents / 100;
+  const flatShip = commerce.shippingFlatCents / 100;
+  const shipping = subtotal >= freeShipOver || freeShipCode || subtotal === 0 ? 0 : flatShip;
+  const taxableBase = Math.max(0, subtotal - discountAmount);
+  const taxRate = commerce.taxRatePct > 0 ? commerce.taxRatePct / 100 : 0;
+  const tax =
+    taxRate <= 0
+      ? 0
+      : commerce.taxIncluded
+        ? taxableBase - taxableBase / (1 + taxRate)
+        : taxableBase * taxRate;
+  const total = taxableBase + shipping + (commerce.taxIncluded ? 0 : tax);
   const cart = items.map((it) => ({ id: it.id, variant: it.variant || undefined, qty: it.qty }));
 
   useEffect(() => {
@@ -159,8 +173,8 @@ export function Checkout({ bank }: { bank: BankDetails }) {
   );
 
   const flow: FlowProps = {
-    step, setStep, method, setMethod, info, items, subtotal, discount, discountAmount, shipping, total,
-    bank, copied, copyIban, placing, payError, cart, onPaid, placeBank, stripeAvailable,
+    step, setStep, method, setMethod, info, items, subtotal, discount, discountAmount, shipping, tax, total,
+    commerce, bank, copied, copyIban, placing, payError, cart, onPaid, placeBank, stripeAvailable,
     stripeReady: stripeAvailable && !!clientSecret, f,
   };
 
@@ -248,7 +262,9 @@ interface FlowProps {
   discount: ReturnType<typeof useShop>["discount"];
   discountAmount: number;
   shipping: number;
+  tax: number;
   total: number;
+  commerce: CommerceSetting;
   bank: BankDetails;
   copied: boolean;
   copyIban: () => void;
@@ -467,6 +483,9 @@ function PayArea(p: FlowProps) {
               <div className="flex justify-between text-mute"><span>Subtotal</span><span>{eur(p.subtotal)}</span></div>
               {p.discount && p.discountAmount > 0 && <div className="flex justify-between text-gold"><span className="whitespace-nowrap">Discount ({p.discount.code})</span><span>−{eur(p.discountAmount)}</span></div>}
               <div className="flex justify-between text-mute"><span>Shipping</span><span>{p.shipping === 0 ? "Free" : eur(p.shipping)}</span></div>
+              {p.commerce.taxRatePct > 0 && (
+                <div className="flex justify-between text-mute"><span className="whitespace-nowrap">Tax (VAT {p.commerce.taxRatePct}%{p.commerce.taxIncluded ? ", incl." : ""})</span><span>{eur(p.tax)}</span></div>
+              )}
               <div className="flex justify-between pt-1 font-semibold text-ink"><span>Total</span><span>{eur(p.total)}</span></div>
             </div>
             <div className="mt-3 flex items-center justify-between rounded-lg bg-sand/40 px-3 py-2.5 text-[12.5px]">

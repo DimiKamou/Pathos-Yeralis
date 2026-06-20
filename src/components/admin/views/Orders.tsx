@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { eur } from "@/lib/money";
 import { Icon } from "@/components/admin/icons";
+import { PackingSlip } from "@/components/admin/PackingSlip";
 import type { ClientOrder } from "@/lib/order-serialize";
 import { Card, Chip, PageHeader, Spinner, fmtDate, paymentTone, fulfillmentTone, Btn, type ViewProps } from "./_shared";
 
@@ -12,6 +13,7 @@ export function Orders(_props: ViewProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [slipOrder, setSlipOrder] = useState<ClientOrder | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -188,6 +190,11 @@ export function Orders(_props: ViewProps) {
                                   <span>{eur(o.totalEur)}</span>
                                 </div>
                                 <div className="pt-1 text-[11.5px] text-mute">Ships to {o.country}</div>
+                                <div className="pt-3">
+                                  <Btn variant="ghost" onClick={() => setSlipOrder(o)} className="w-full">
+                                    Print packing slip
+                                  </Btn>
+                                </div>
                               </div>
                             </div>
                           </td>
@@ -201,6 +208,8 @@ export function Orders(_props: ViewProps) {
           </div>
         </Card>
       )}
+
+      {slipOrder && <PackingSlip order={slipOrder} onClose={() => setSlipOrder(null)} />}
     </div>
   );
 }

@@ -170,6 +170,15 @@ export const Icon = {
       <path d="M20 6 9 17l-5-5" />
     </S>
   ),
+  star: (p: P) => (
+    <S {...p}>
+      <path
+        d="m12 2.5 2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 18.56l-5.88 3.1 1.12-6.55-4.76-4.64 6.58-.96L12 2.5Z"
+        fill="currentColor"
+        stroke="none"
+      />
+    </S>
+  ),
 };
 
 export type IconKey = keyof typeof Icon;
