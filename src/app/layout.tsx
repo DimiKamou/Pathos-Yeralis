@@ -1,10 +1,21 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const DESCRIPTION =
+  "Handmade jewelry from the Aegean — gemstones, shells and minerals shaped into pieces made to last a lifetime.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "PATHOS · by Yeralis",
-  description:
-    "Handmade jewelry from the Aegean — gemstones, shells and minerals shaped into pieces made to last a lifetime.",
+  description: DESCRIPTION,
+  openGraph: {
+    title: "PATHOS by Yeralis",
+    description: DESCRIPTION,
+    type: "website",
+    siteName: "PATHOS by Yeralis",
+  },
+  twitter: { card: "summary_large_image", title: "PATHOS by Yeralis", description: DESCRIPTION },
 };
 
 // Pre-paint theme: apply saved dark mode before first paint to avoid a flash.
