@@ -18,7 +18,7 @@ import { eur } from "@/lib/money";
 import { ArtBox } from "./product-art";
 import { DiscountField } from "./DiscountField";
 import { getStripePromise, elementsAppearance } from "./stripe-client";
-import { AppleMark, BankIcon, CardIcon, CloseIcon, CopyIcon, GoogleG, LockIcon } from "./icons";
+import { BankIcon, CardIcon, CloseIcon, CopyIcon, LockIcon } from "./icons";
 import type { BankDetails } from "@/lib/bank";
 import type { ClientOrder } from "@/lib/order-serialize";
 
@@ -400,16 +400,11 @@ function PayArea(p: FlowProps) {
               : "Test mode — use Stripe test card 4242 4242 4242 4242, any future date & CVC."}
           </div>
           {/* express pay */}
-          {p.stripeAvailable && (
+          {/* Apple/Google Pay express button — only shown when the browser
+              actually has a wallet available (no misleading dead pills). */}
+          {p.stripeAvailable && paymentRequest && (
             <>
-              {paymentRequest ? (
-                <PaymentRequestButtonElement options={{ paymentRequest }} />
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center justify-center gap-1.5 rounded-lg bg-black/90 py-3 text-[14px] font-medium text-white opacity-50" title="Apple Pay appears on supported Apple devices"><AppleMark size={17} className="-mt-0.5" /> Pay</div>
-                  <div className="flex items-center justify-center gap-1.5 rounded-lg border border-ink/20 py-3 text-[14px] font-medium text-ink opacity-50" title="Google Pay appears in supported browsers"><GoogleG size={18} /> Pay</div>
-                </div>
-              )}
+              <PaymentRequestButtonElement options={{ paymentRequest }} />
               <div className="flex items-center gap-3 py-1 text-[11px] uppercase tracking-[0.16em] text-mute"><span className="h-px flex-1 bg-ink/10" />or pay another way<span className="h-px flex-1 bg-ink/10" /></div>
             </>
           )}
