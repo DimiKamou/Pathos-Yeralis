@@ -11,6 +11,7 @@ import { SiteFooter } from "./SiteFooter";
 import { ChatWidget } from "./ChatWidget";
 import { EntryPopup } from "./EntryPopup";
 import { OverlayManager } from "./OverlayManager";
+import { CookieConsent } from "./CookieConsent";
 import { PDPModal } from "./PDPModal";
 import { WishDrawer } from "./WishDrawer";
 import { CartDrawer } from "./CartDrawer";
@@ -47,6 +48,7 @@ export function StoreShell({
         <CartDrawer />
         <Checkout bank={bank} />
         <OverlayManager />
+        <CookieConsent />
       </div>
     </ShopProvider>
   );
