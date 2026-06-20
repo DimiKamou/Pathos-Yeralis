@@ -98,19 +98,46 @@ export function ShopProvider({
 
   const productById = (id: string) => products.find((p) => p.id === id);
 
+  // Reconcile the persisted cart/wishlist against the live catalog: drop items
+  // whose product was removed, set to Draft, or sold out; refresh name/price;
+  // clamp qty to stock. Prune deleted wishlist ids (keeps wishCount honest).
+  useEffect(() => {
+    if (!hydrated) return;
+    setItems((prev) => {
+      const next: CartLine[] = [];
+      for (const it of prev) {
+        const p = products.find((x) => x.id === it.id);
+        if (!p || p.status !== "Active" || p.stock <= 0) continue;
+        next.push({ ...it, name: p.name, art: p.art, price: p.price, qty: Math.min(it.qty, p.stock) });
+      }
+      return next;
+    });
+    setWish((prev) => prev.filter((id) => products.some((p) => p.id === id)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, products]);
+
   const add = (p: StoreProduct, variant = "", qty = 1) =>
     setItems((prev) => {
       const key = p.id + "|" + (variant || "");
+      const max = Math.max(1, p.stock);
       const i = prev.findIndex((x) => x.key === key);
       if (i >= 0) {
         const n = prev.slice();
-        n[i] = { ...n[i], qty: n[i].qty + qty };
+        n[i] = { ...n[i], qty: Math.min(n[i].qty + qty, max) };
         return n;
       }
-      return [...prev, { key, id: p.id, name: p.name, art: p.art, price: p.price, variant: variant || "", qty }];
+      return [...prev, { key, id: p.id, name: p.name, art: p.art, price: p.price, variant: variant || "", qty: Math.min(qty, max) }];
     });
   const setQty = (key: string, qty: number) =>
-    setItems((prev) => (qty <= 0 ? prev.filter((x) => x.key !== key) : prev.map((x) => (x.key === key ? { ...x, qty } : x))));
+    setItems((prev) =>
+      qty <= 0
+        ? prev.filter((x) => x.key !== key)
+        : prev.map((x) => {
+            if (x.key !== key) return x;
+            const max = Math.max(1, productById(x.id)?.stock ?? qty);
+            return { ...x, qty: Math.min(qty, max) };
+          }),
+    );
   const remove = (key: string) => setItems((prev) => prev.filter((x) => x.key !== key));
   const clear = () => {
     setItems([]);

@@ -10,6 +10,7 @@ import { Nav } from "./Nav";
 import { SiteFooter } from "./SiteFooter";
 import { ChatWidget } from "./ChatWidget";
 import { EntryPopup } from "./EntryPopup";
+import { OverlayManager } from "./OverlayManager";
 import { PDPModal } from "./PDPModal";
 import { WishDrawer } from "./WishDrawer";
 import { CartDrawer } from "./CartDrawer";
@@ -45,6 +46,7 @@ export function StoreShell({
         <WishDrawer />
         <CartDrawer />
         <Checkout bank={bank} />
+        <OverlayManager />
       </div>
     </ShopProvider>
   );
