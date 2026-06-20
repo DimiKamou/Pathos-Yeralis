@@ -112,6 +112,42 @@ ${trackingCard}
 </td></tr>`);
 }
 
+// ── Owner alert: a heads-up to the shop owner on every new order ──
+export interface OwnerOrderData {
+  number: string;
+  customer: string;
+  email: string;
+  method: string;
+  payment: string; // Paid | Awaiting payment
+  totalEur: number;
+  lines: OrderEmailLine[];
+}
+
+export function newOrderOwnerHtml(o: OwnerOrderData): string {
+  const paid = o.payment !== "Awaiting payment";
+  const status = paid ? `Paid via ${o.method}` : `Awaiting bank transfer`;
+  const detail = (k: string, v: string) =>
+    `<tr><td style="padding:5px 0;font-size:13px;color:${MUTE};">${k}</td><td align="right" style="padding:5px 0;font-size:13px;color:${INK};">${v}</td></tr>`;
+  return shell(`
+<tr><td style="background:${PAPER};padding:36px 48px 8px;" align="center">
+<div style="font-size:11px;letter-spacing:4px;text-transform:uppercase;color:${GOLD};">New order</div>
+<div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;font-weight:500;color:${INK};margin-top:8px;">#${o.number}</div>
+<div style="display:inline-block;margin-top:10px;padding:5px 14px;border-radius:999px;font-size:12px;font-weight:500;color:${paid ? "#1f7a4d" : GOLD};background:${paid ? "rgba(31,122,77,.1)" : "rgba(177,137,78,.12)"};">${status}</div>
+</td></tr>
+<tr><td style="background:${PAPER};padding:14px 48px 0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+${detail("Customer", o.customer || "Guest")}
+<tr><td style="padding:5px 0;font-size:13px;color:${MUTE};">Email</td><td align="right" style="padding:5px 0;font-size:13px;"><a href="mailto:${o.email}" style="color:${GOLD};text-decoration:none;">${o.email}</a></td></tr>
+</table></td></tr>
+<tr><td style="background:${PAPER};padding:18px 48px 36px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+${lineRows(o.lines)}
+<tr><td style="padding:14px 0 0;font-size:15px;font-weight:600;color:${INK};">Total</td><td align="right" style="padding:14px 0 0;font-size:15px;font-weight:600;color:${INK};">${eur(o.totalEur)}</td></tr>
+</table>
+<p style="font-size:12px;font-weight:300;line-height:1.7;color:${MUTE};margin:18px 0 0;">Manage and fulfil this order from your PATHOS admin dashboard. Reply to this email to reach the customer directly.</p>
+</td></tr>`);
+}
+
 export interface CampaignPiece {
   name: string;
   detail: string;
