@@ -59,6 +59,8 @@ export function Checkout({ bank, commerce }: { bank: BankDetails; commerce: Comm
   const { checkout, setCheckout, items, subtotal, clear, discount, discountAmount, freeShipCode } = useShop();
   const [step, setStep] = useState(0);
   const [info, setInfo] = useState<Info>({ name: "", email: "", address: "", city: "", zip: "", country: "Greece" });
+  const [isGift, setIsGift] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
   const stripeAvailable = !!stripePromise;
   // "card" is offered in both real (Stripe) and offline-demo modes.
   const [method, setMethod] = useState<Method>("card");
@@ -94,6 +96,8 @@ export function Checkout({ bank, commerce }: { bank: BankDetails; commerce: Comm
       setClientSecret(null);
       piRef.current = null;
       setPayError("");
+      setIsGift(false);
+      setGiftMessage("");
     }
   }, [checkout, stripeAvailable]);
 
@@ -153,7 +157,7 @@ export function Checkout({ bank, commerce }: { bank: BankDetails; commerce: Comm
       const res = await fetch("/api/checkout/bank", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cart, discountCode: discount?.code ?? null, contact: info }),
+        body: JSON.stringify({ cart, discountCode: discount?.code ?? null, contact: info, isGift, giftMessage: isGift ? giftMessage : null }),
       });
       const data = await res.json();
       if (data.ok) onPaid(data.order);
@@ -175,6 +179,7 @@ export function Checkout({ bank, commerce }: { bank: BankDetails; commerce: Comm
   const flow: FlowProps = {
     step, setStep, method, setMethod, info, items, subtotal, discount, discountAmount, shipping, tax, total,
     commerce, bank, copied, copyIban, placing, payError, cart, onPaid, placeBank, stripeAvailable,
+    isGift, giftMessage,
     stripeReady: stripeAvailable && !!clientSecret, f,
   };
 
@@ -227,6 +232,21 @@ export function Checkout({ bank, commerce }: { bank: BankDetails; commerce: Comm
                   <select className={f} value={info.country} onChange={(e) => set("country", e.target.value)}>
                     {Object.keys(COUNTRY_CODE).map((c) => <option key={c}>{c}</option>)}
                   </select>
+                  <label className="flex cursor-pointer select-none items-center gap-2.5 pt-1">
+                    <input type="checkbox" checked={isGift} onChange={(e) => setIsGift(e.target.checked)} className="h-4 w-4 accent-gold" />
+                    <span className="text-[13px] text-ink">This is a gift</span>
+                    <span className="text-[11.5px] font-light text-mute">— we&apos;ll hide prices on the slip</span>
+                  </label>
+                  {isGift && (
+                    <textarea
+                      className={`${f} resize-none`}
+                      rows={3}
+                      maxLength={500}
+                      placeholder="Gift message (optional) — we'll include it on the packing slip"
+                      value={giftMessage}
+                      onChange={(e) => setGiftMessage(e.target.value)}
+                    />
+                  )}
                 </div>
                 <div className="flex items-center gap-2.5 border-t border-ink/10 px-6 py-4">
                   <button onClick={() => setStep(1)} disabled={!step0Ok} className={`ml-auto rounded-lg px-5 py-2.5 text-[12.5px] font-medium text-paper transition-colors ${step0Ok ? "bg-ink hover:bg-ink/90" : "cursor-not-allowed bg-ink/30"}`}>Continue</button>
@@ -274,6 +294,8 @@ interface FlowProps {
   onPaid: (o: ClientOrder) => void;
   placeBank: () => void;
   stripeAvailable: boolean;
+  isGift: boolean;
+  giftMessage: string;
   stripeReady: boolean;
   f: string;
 }
@@ -338,7 +360,7 @@ function PayArea(p: FlowProps) {
     const res = await fetch("/api/checkout/complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentIntentId, cart: p.cart, discountCode: p.discount?.code ?? null, contact: p.info, method: methodHint }),
+      body: JSON.stringify({ paymentIntentId, cart: p.cart, discountCode: p.discount?.code ?? null, contact: p.info, method: methodHint, isGift: p.isGift, giftMessage: p.isGift ? p.giftMessage : null }),
     });
     const data = await res.json();
     if (data.ok) p.onPaid(data.order);
@@ -381,7 +403,7 @@ function PayArea(p: FlowProps) {
       const res = await fetch("/api/checkout/demo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cart: p.cart, discountCode: p.discount?.code ?? null, contact: p.info }),
+        body: JSON.stringify({ cart: p.cart, discountCode: p.discount?.code ?? null, contact: p.info, isGift: p.isGift, giftMessage: p.isGift ? p.giftMessage : null }),
       });
       const data = await res.json();
       if (data.ok) p.onPaid(data.order);
@@ -493,6 +515,11 @@ function PayArea(p: FlowProps) {
               <span className="flex items-center gap-1.5 whitespace-nowrap font-medium text-ink">{p.method === "card" ? <CardIcon size={15} className="text-mute" /> : <BankIcon size={15} className="text-mute" />}{p.method === "card" ? "Card" : "Bank transfer"}</span>
             </div>
             <div className="mt-2 text-[12px] font-light text-mute">Shipping to {p.info.name}, {p.info.address}, {p.info.city} {p.info.zip}, {p.info.country}.</div>
+            {p.isGift && (
+              <div className="mt-2 rounded-lg bg-gold/[0.08] px-3 py-2 text-[12px] text-ink">
+                <span className="font-medium text-gold">Gift</span> — prices hidden on the packing slip{p.giftMessage ? <>. Message: <span className="italic">“{p.giftMessage}”</span></> : ""}
+              </div>
+            )}
           </>
         )}
 

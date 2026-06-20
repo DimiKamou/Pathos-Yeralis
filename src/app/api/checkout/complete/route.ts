@@ -19,6 +19,8 @@ const schema = z.object({
     country: z.string().optional(),
   }),
   method: z.enum(["card", "apple", "google"]).optional(),
+  isGift: z.boolean().optional(),
+  giftMessage: z.string().max(500).optional().nullable(),
 });
 
 const METHOD_LABEL: Record<string, string> = {
@@ -81,6 +83,8 @@ export async function POST(req: Request) {
     payment: "Paid",
     method,
     stripePaymentIntentId: intent.id,
+    isGift: data.isGift,
+    giftMessage: data.giftMessage,
   });
 
   // Best-effort side effects (never block the confirmation).

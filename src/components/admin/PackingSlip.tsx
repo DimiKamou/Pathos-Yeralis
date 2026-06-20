@@ -18,6 +18,9 @@ function eur(n: number): string {
 
 export function PackingSlip({ order, onClose }: { order: ClientOrder; onClose: () => void }) {
   const totalItems = order.lines.reduce((s, l) => s + l.qty, 0);
+  // Gift slips hide every price (Amount column + totals) and surface the
+  // gift message instead — so the recipient never sees what was paid.
+  const isGift = order.isGift;
 
   return (
     <div
@@ -107,9 +110,11 @@ export function PackingSlip({ order, onClose }: { order: ClientOrder; onClose: (
                 <th className="py-2 pr-4 text-[11px] font-semibold uppercase" style={{ letterSpacing: "0.12em", color: `${INK}99` }}>
                   Item
                 </th>
-                <th className="py-2 text-right text-[11px] font-semibold uppercase" style={{ letterSpacing: "0.12em", color: `${INK}99` }}>
-                  Amount
-                </th>
+                {!isGift && (
+                  <th className="py-2 text-right text-[11px] font-semibold uppercase" style={{ letterSpacing: "0.12em", color: `${INK}99` }}>
+                    Amount
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -124,28 +129,47 @@ export function PackingSlip({ order, onClose }: { order: ClientOrder; onClose: (
                       </div>
                     )}
                   </td>
-                  <td className="py-3 text-right align-top">{eur(l.priceEur * l.qty)}</td>
+                  {!isGift && <td className="py-3 text-right align-top">{eur(l.priceEur * l.qty)}</td>}
                 </tr>
               ))}
             </tbody>
           </table>
 
-          {/* totals */}
-          <div className="mt-6 flex justify-end">
-            <div className="w-full max-w-[280px] space-y-1.5 text-[13px]">
-              <Row label="Subtotal" value={eur(order.subtotalEur)} />
-              {order.discountEur > 0 && <Row label="Discount" value={`-${eur(order.discountEur)}`} />}
-              <Row label="Shipping" value={order.shippingEur === 0 ? "Free" : eur(order.shippingEur)} />
-              {order.taxEur > 0 && <Row label="Tax" value={eur(order.taxEur)} />}
-              <div
-                className="flex justify-between pt-2 text-[15px] font-semibold"
-                style={{ borderTop: `1px solid ${INK}33` }}
-              >
-                <span>Total</span>
-                <span>{eur(order.totalEur)}</span>
+          {/* totals — hidden on gift slips */}
+          {!isGift && (
+            <div className="mt-6 flex justify-end">
+              <div className="w-full max-w-[280px] space-y-1.5 text-[13px]">
+                <Row label="Subtotal" value={eur(order.subtotalEur)} />
+                {order.discountEur > 0 && <Row label="Discount" value={`-${eur(order.discountEur)}`} />}
+                <Row label="Shipping" value={order.shippingEur === 0 ? "Free" : eur(order.shippingEur)} />
+                {order.taxEur > 0 && <Row label="Tax" value={eur(order.taxEur)} />}
+                <div
+                  className="flex justify-between pt-2 text-[15px] font-semibold"
+                  style={{ borderTop: `1px solid ${INK}33` }}
+                >
+                  <span>Total</span>
+                  <span>{eur(order.totalEur)}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* gift message — shown on gift slips in place of the totals */}
+          {isGift && (
+            <div
+              className="mt-8 rounded-lg px-6 py-5 text-center"
+              style={{ background: "#fffdf8", border: `1px solid ${INK}22` }}
+            >
+              <div className="text-[11px] font-semibold uppercase" style={{ letterSpacing: "0.18em", color: GOLD }}>
+                A gift for you
+              </div>
+              {order.giftMessage && (
+                <div className="mx-auto mt-3 max-w-[460px] text-[15px] italic leading-relaxed" style={{ color: INK }}>
+                  “{order.giftMessage}”
+                </div>
+              )}
+            </div>
+          )}
 
           {/* footer note */}
           <div className="mt-12 border-t pt-6 text-center text-[12px]" style={{ borderColor: `${INK}1a`, color: `${INK}88` }}>

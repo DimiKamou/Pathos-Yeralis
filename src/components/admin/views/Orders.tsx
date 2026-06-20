@@ -206,6 +206,12 @@ export function Orders(_props: ViewProps) {
                                     {o.trackingNumber}
                                   </div>
                                 )}
+                                {o.isGift && (
+                                  <div className="mt-1 rounded-lg bg-gold/[0.08] px-2.5 py-1.5 text-[11.5px] text-ink">
+                                    <span className="font-semibold text-gold">Gift order</span>
+                                    {o.giftMessage && <div className="mt-0.5 italic text-mute">“{o.giftMessage}”</div>}
+                                  </div>
+                                )}
                                 <div className="pt-3">
                                   <Btn variant="ghost" onClick={() => setSlipOrder(o)} className="w-full">
                                     Print packing slip

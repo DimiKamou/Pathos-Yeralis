@@ -77,6 +77,8 @@ model Order {
   shipZip      String?
   trackingCarrier String?
   trackingNumber  String?
+  isGift       Boolean  @default(false)
+  giftMessage  String?
 
   stripePaymentIntentId String? @unique
   online       Boolean  @default(true)

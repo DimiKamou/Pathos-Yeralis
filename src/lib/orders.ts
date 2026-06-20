@@ -140,8 +140,10 @@ export async function createOrder(params: {
   payment: "Paid" | "Awaiting payment";
   method: string; // Card | Apple Pay | Google Pay | Bank transfer
   stripePaymentIntentId?: string | null;
+  isGift?: boolean;
+  giftMessage?: string | null;
 }) {
-  const { contact, priced, payment, method, stripePaymentIntentId } = params;
+  const { contact, priced, payment, method, stripePaymentIntentId, isGift, giftMessage } = params;
   // Atomic: create the order + lines, bump `sold`, and decrement stock ONLY
   // when there's enough (the `stock >= qty` guard means stock never goes
   // negative). `updateMany` is used so a product deleted mid-checkout can't
@@ -168,6 +170,8 @@ export async function createOrder(params: {
             shipAddress: contact.address ?? null,
             shipCity: contact.city ?? null,
             shipZip: contact.zip ?? null,
+            isGift: isGift ?? false,
+            giftMessage: isGift ? (giftMessage?.trim() || null) : null,
             stripePaymentIntentId: stripePaymentIntentId ?? null,
             lines: {
               create: priced.lines.map((l) => ({

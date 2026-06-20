@@ -17,6 +17,8 @@ const schema = z.object({
     zip: z.string().optional(),
     country: z.string().optional(),
   }),
+  isGift: z.boolean().optional(),
+  giftMessage: z.string().max(500).optional().nullable(),
 });
 
 // Manual offline payment: create the order as "Awaiting payment" and email the
@@ -46,6 +48,8 @@ export async function POST(req: Request) {
     priced,
     payment: "Awaiting payment",
     method: "Bank transfer",
+    isGift: data.isGift,
+    giftMessage: data.giftMessage,
   });
 
   await prisma.subscriber

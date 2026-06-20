@@ -17,6 +17,8 @@ const schema = z.object({
     zip: z.string().optional(),
     country: z.string().optional(),
   }),
+  isGift: z.boolean().optional(),
+  giftMessage: z.string().max(500).optional().nullable(),
 });
 
 // OFFLINE DEMO ONLY: simulates a successful card payment so the full
@@ -45,7 +47,7 @@ export async function POST(req: Request) {
   }
 
   const contact: ContactInput = data.contact;
-  const order = await createOrder({ contact, priced, payment: "Paid", method: "Card (demo)" });
+  const order = await createOrder({ contact, priced, payment: "Paid", method: "Card (demo)", isGift: data.isGift, giftMessage: data.giftMessage });
 
   await prisma.subscriber
     .upsert({
