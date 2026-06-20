@@ -5,6 +5,7 @@ import {
   orderConfirmationHtml,
   bankInstructionsHtml,
   campaignHtml,
+  shippedHtml,
   type OrderEmailData,
   type CampaignData,
 } from "./templates";
@@ -42,6 +43,18 @@ export async function sendOrderEmail(order: OrderForEmail): Promise<void> {
   } catch (err) {
     // Never let a transactional email failure break checkout.
     console.error("[email] order email failed:", err);
+  }
+}
+
+export async function sendShippedEmail(o: { number: string; customer: string; email: string }): Promise<void> {
+  try {
+    await getEmailProvider().send({
+      to: o.email,
+      subject: `Your PATHOS order #${o.number} has shipped`,
+      html: shippedHtml(o),
+    });
+  } catch (err) {
+    console.error("[email] shipped email failed:", err);
   }
 }
 

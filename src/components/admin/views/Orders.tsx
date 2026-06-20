@@ -10,6 +10,8 @@ export function Orders(_props: ViewProps) {
   const [orders, setOrders] = useState<ClientOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     let alive = true;
@@ -40,9 +42,37 @@ export function Orders(_props: ViewProps) {
 
   if (loading) return <Spinner />;
 
+  const ql = q.trim().toLowerCase();
+  const shown = orders.filter((o) => {
+    if (statusFilter !== "all" && o.payment !== statusFilter) return false;
+    if (!ql) return true;
+    return o.number.toLowerCase().includes(ql) || o.customer.toLowerCase().includes(ql) || o.email.toLowerCase().includes(ql);
+  });
+
   return (
     <div>
-      <PageHeader title="Orders" subtitle={`${orders.length} order${orders.length === 1 ? "" : "s"}.`} />
+      <PageHeader
+        title="Orders"
+        subtitle={`${orders.length} order${orders.length === 1 ? "" : "s"}.`}
+        action={
+          <a href="/api/admin/orders/export" className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-4 py-2 text-[12.5px] font-semibold text-ink/80 hover:bg-ink/[0.04]">
+            Export CSV
+          </a>
+        }
+      />
+
+      {orders.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search #order, customer, email…" className="w-64 rounded-lg border border-ink/15 bg-paper px-3 py-2 text-[13px] text-ink placeholder:text-mute focus:border-gold focus:outline-none" />
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-ink/15 bg-paper px-3 py-2 text-[13px] text-ink focus:border-gold focus:outline-none">
+            <option value="all">All payments</option>
+            <option value="Paid">Paid</option>
+            <option value="Awaiting payment">Awaiting payment</option>
+            <option value="Refunded">Refunded</option>
+          </select>
+          <span className="text-[12px] text-mute">{shown.length} shown</span>
+        </div>
+      )}
 
       {orders.length === 0 ? (
         <Card className="px-6 py-16 text-center text-[13px] text-mute">No orders yet.</Card>
@@ -64,7 +94,7 @@ export function Orders(_props: ViewProps) {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((o) => {
+                {shown.map((o) => {
                   const items = o.lines.reduce((s, l) => s + l.qty, 0);
                   const isOpen = expanded === o.id;
                   return (
@@ -102,6 +132,18 @@ export function Orders(_props: ViewProps) {
                                 className="!px-3 !py-1.5"
                               >
                                 Mark shipped
+                              </Btn>
+                            )}
+                            {o.payment === "Paid" && (
+                              <Btn
+                                variant="ghost"
+                                onClick={() => {
+                                  if (confirm(`Refund order #${o.number}? This restocks the items${o.method === "Card" || o.method === "Apple Pay" || o.method === "Google Pay" ? " and refunds via Stripe" : ""}.`))
+                                    patch(o.id, { payment: "Refunded" });
+                                }}
+                                className="!px-3 !py-1.5"
+                              >
+                                Refund
                               </Btn>
                             )}
                             <Icon.chevR

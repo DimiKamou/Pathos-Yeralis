@@ -87,6 +87,15 @@ ${row("Reference", "#" + o.number)}
 }
 
 // ── Campaign / newsletter (parameterized port of PATHOS Newsletter.html) ──
+// Sent when an admin marks an order Shipped.
+export function shippedHtml(o: { number: string; customer: string }): string {
+  return shell(`
+<tr><td style="background:${PAPER};padding:42px 48px;" align="center">
+<div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;font-weight:500;color:${INK};">On its way, ${o.customer.split(" ")[0]}!</div>
+<p style="font-size:14px;font-weight:300;line-height:1.85;color:${MUTE};max-width:400px;margin:14px auto 0;">Good news — your order <strong style="color:${INK};">#${o.number}</strong> has shipped and is on its way to you. Thank you for supporting our atelier.</p>
+</td></tr>`);
+}
+
 export interface CampaignPiece {
   name: string;
   detail: string;
