@@ -210,6 +210,7 @@ export function PDPModal() {
   if (!pdp) return null;
   const v = variantsFor(pdp.art);
   const sold = pdp.stock === 0;
+  const low = pdp.stock > 0 && pdp.stock <= 5;
   const saved = inWish(pdp.id);
   const addToCart = () => { add(pdp, variant, qty); setPdp(null); setCartOpen(true); };
   const related = products.filter((p) => p.status === "Active" && p.collection === pdp.collection && p.id !== pdp.id).slice(0, 3);
@@ -267,6 +268,7 @@ export function PDPModal() {
                 </div>
                 <span className="text-[12px] text-mute">{pdp.stock + " in stock"}</span>
               </div>
+              {low && <div className="mt-3 text-[12px] font-medium text-gold">Only {pdp.stock} left — order soon</div>}
               <button onClick={addToCart}
                 className="mt-6 flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-ink py-3.5 text-[12.5px] font-medium uppercase tracking-[0.16em] text-paper transition-colors hover:bg-ink/90">
                 Add to cart — {eur(pdp.price * qty)}

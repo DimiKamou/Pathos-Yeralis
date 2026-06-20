@@ -76,6 +76,8 @@ export function Products(_props: ViewProps) {
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function load() {
@@ -150,11 +152,102 @@ export function Products(_props: ViewProps) {
   async function remove(id: string) {
     if (!confirm("Delete this product?")) return;
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    setSelected((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
     load();
   }
 
+  // ── Multi-select ──
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelected((prev) =>
+      prev.size === products.length ? new Set() : new Set(products.map((p) => p.id)),
+    );
+  }
+
+  // ── Bulk actions ──
+  async function bulkSetStatus(status: "Active" | "Draft") {
+    const ids = Array.from(selected);
+    if (!ids.length) return;
+    setBusy(true);
+    try {
+      const updated = await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/admin/products/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          })
+            .then((r) => r.json())
+            .then((d) => d?.product as StoreProduct | undefined),
+        ),
+      );
+      const byId = new Map(updated.filter(Boolean).map((p) => [p!.id, p!]));
+      setProducts((prev) =>
+        prev.map((p) => (byId.has(p.id) ? byId.get(p.id)! : selected.has(p.id) ? { ...p, status } : p)),
+      );
+      setSelected(new Set());
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function bulkDelete() {
+    const ids = Array.from(selected);
+    if (!ids.length) return;
+    if (!confirm(`Delete ${ids.length} product${ids.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
+    setBusy(true);
+    try {
+      await Promise.all(ids.map((id) => fetch(`/api/admin/products/${id}`, { method: "DELETE" })));
+      const removed = new Set(ids);
+      setProducts((prev) => prev.filter((p) => !removed.has(p.id)));
+      setSelected(new Set());
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ── CSV export (client-side) ──
+  function csvField(value: unknown): string {
+    const s = value == null ? "" : String(value);
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+
+  function exportCsv() {
+    const header = ["id", "name", "collection", "price", "stock", "status", "sold", "material"];
+    const rows = products.map((p) =>
+      [p.id, p.name, p.collection, p.price, p.stock, p.status, p.sold, p.material ?? ""]
+        .map(csvField)
+        .join(","),
+    );
+    const csv = [header.map(csvField).join(","), ...rows].join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pathos-products.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   if (loading) return <Spinner />;
+
+  const allSelected = products.length > 0 && selected.size === products.length;
 
   const collOptions = Array.from(new Set([...collections, form?.collection].filter(Boolean))) as string[];
 
@@ -164,16 +257,70 @@ export function Products(_props: ViewProps) {
         title="Products"
         subtitle={`${products.length} piece${products.length === 1 ? "" : "s"} in the catalog.`}
         action={
-          <Btn variant="primary" onClick={() => setForm({ ...blankForm })}>
-            <Icon.plus size={15} /> Add product
-          </Btn>
+          <div className="flex items-center gap-2">
+            <Btn variant="ghost" onClick={exportCsv} disabled={products.length === 0}>
+              <Icon.box size={15} /> Export CSV
+            </Btn>
+            <Btn variant="primary" onClick={() => setForm({ ...blankForm })}>
+              <Icon.plus size={15} /> Add product
+            </Btn>
+          </div>
         }
       />
 
+      {products.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/10 bg-paper px-4 py-2.5">
+          <label className="flex cursor-pointer select-none items-center gap-2 text-[12.5px] font-medium text-ink/80">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleSelectAll}
+              className="h-4 w-4 cursor-pointer accent-gold"
+            />
+            {selected.size > 0 ? (
+              <span>
+                <span className="font-semibold text-ink">{selected.size}</span> selected
+              </span>
+            ) : (
+              <span className="text-mute">Select all</span>
+            )}
+          </label>
+          {selected.size > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Btn variant="ghost" onClick={() => bulkSetStatus("Active")} disabled={busy} className="!px-3 !py-1.5">
+                <Icon.check size={14} /> Activate
+              </Btn>
+              <Btn variant="ghost" onClick={() => bulkSetStatus("Draft")} disabled={busy} className="!px-3 !py-1.5">
+                Set to draft
+              </Btn>
+              <Btn variant="danger" onClick={bulkDelete} disabled={busy} className="!px-3 !py-1.5">
+                <Icon.trash size={14} /> Delete
+              </Btn>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {products.map((p) => (
-          <Card key={p.id} className="flex flex-col overflow-hidden">
+          <Card
+            key={p.id}
+            className={`flex flex-col overflow-hidden ${selected.has(p.id) ? "ring-2 ring-gold" : ""}`}
+          >
             <div className="relative flex h-40 items-center justify-center border-b border-ink/10 bg-sand/50">
+              <label
+                className="absolute left-2 top-2 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-ink/15 bg-paper/90 shadow-sm backdrop-blur"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.has(p.id)}
+                  onChange={() => toggleSelect(p.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-4 w-4 cursor-pointer accent-gold"
+                  aria-label={`Select ${p.name}`}
+                />
+              </label>
               {p.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" />

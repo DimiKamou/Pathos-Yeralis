@@ -81,11 +81,13 @@ function Swatches({ colors }: { colors: string[] }) {
 export function ProductCard({ p }: { p: StoreProduct }) {
   const { setPdp, toggleWish, inWish } = useShop();
   const sold = p.stock === 0;
+  const low = p.stock > 0 && p.stock <= 5;
   const saved = inWish(p.id);
   return (
     <div className="group w-[200px] shrink-0">
       <button onClick={() => setPdp(p)} className="relative flex h-[210px] w-full items-center justify-center bg-paper">
         {sold && <span className="absolute right-2 top-2 bg-[#d8cdba] px-2 py-[3px] text-[10px] font-medium tracking-wide text-[#6b5f4d]">Sold Out</span>}
+        {low && <span className="absolute right-2 top-2 bg-gold/90 px-2 py-[3px] text-[10px] font-medium tracking-wide text-paper">Only {p.stock} left</span>}
         {p.imageUrl ? (
           <ProductMedia
             art={p.art}
