@@ -3,10 +3,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
-  name: z.string().optional(),
+  name: z.string().trim().max(120).optional(),
   email: z.string().email(),
   topic: z.string().optional(),
-  message: z.string().min(2),
+  message: z.string().trim().min(2).max(5000),
 });
 
 // Live-chat / contact form → admin inbox (was PathosStore.pushMessage).

@@ -3,8 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
-  email: z.string().email(),
-  source: z.string().optional(),
+  email: z.string().trim().email(),
+  source: z.string().max(120).optional(),
 });
 
 // Newsletter / back-in-stock signups. Dedupes on email (like pushSubscriber).

@@ -103,6 +103,20 @@ export function breadcrumbJsonLd(
   };
 }
 
+// Serialize JSON-LD for safe injection into a <script> block. JSON.stringify
+// does NOT escape `<`, `>`, `&`, or the line/paragraph separators U+2028/U+2029,
+// so a value containing `</script>` could break out of the script tag and
+// execute (stored XSS). These are standard JSON string unicode escapes, so the
+// output remains valid JSON-LD while neutralizing any `</script>` breakout.
+function serializeJsonLd(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
 // Authored with createElement rather than JSX so this stays a `.ts` module
 // (the repo reserves `.tsx` for JSX); the output is an identical <script> tag.
 export function JsonLd({
@@ -112,6 +126,6 @@ export function JsonLd({
 }) {
   return createElement("script", {
     type: "application/ld+json",
-    dangerouslySetInnerHTML: { __html: JSON.stringify(data) },
+    dangerouslySetInnerHTML: { __html: serializeJsonLd(data) },
   });
 }

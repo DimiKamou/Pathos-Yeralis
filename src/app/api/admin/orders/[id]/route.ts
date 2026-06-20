@@ -29,28 +29,42 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
   }
 
-  const becomingRefunded = data.payment === "Refunded" && existing.payment !== "Refunded";
+  const wantsRefund = data.payment === "Refunded" && existing.payment !== "Refunded";
   const becomingShipped = data.fulfillment === "Shipped" && existing.fulfillment !== "Shipped";
 
-  if (becomingRefunded) {
-    // Restock + decrement `sold` once (floored at 0).
-    await prisma.$transaction(
-      existing.lines
-        .filter((l) => l.productId)
-        .map((l) =>
-          prisma.product.updateMany({
-            where: { id: l.productId! },
-            data: { stock: { increment: l.qty }, sold: { decrement: l.qty } },
-          }),
-        ),
-    );
-    await prisma.product.updateMany({ where: { sold: { lt: 0 } }, data: { sold: 0 } });
-    // Best-effort Stripe refund (won't block the status change).
-    if (existing.stripePaymentIntentId && isStripeConfigured()) {
-      try {
-        await getStripe().refunds.create({ payment_intent: existing.stripePaymentIntentId });
-      } catch (err) {
-        console.error("[refund] Stripe refund failed:", err);
+  if (wantsRefund) {
+    // Atomically claim the refund transition: only the request that actually
+    // flips Paid -> Refunded performs the restock + Stripe refund. Concurrent
+    // PATCHes see claim.count === 0 and skip, keeping the operation idempotent.
+    const claim = await prisma.order.updateMany({
+      where: { id, payment: { not: "Refunded" } },
+      data: { payment: "Refunded" },
+    });
+
+    if (claim.count === 1) {
+      // Restock + decrement `sold` once (floored at 0).
+      await prisma.$transaction(
+        existing.lines
+          .filter((l) => l.productId)
+          .map((l) =>
+            prisma.product.updateMany({
+              where: { id: l.productId! },
+              data: { stock: { increment: l.qty }, sold: { decrement: l.qty } },
+            }),
+          ),
+      );
+      await prisma.product.updateMany({ where: { sold: { lt: 0 } }, data: { sold: 0 } });
+      // Best-effort Stripe refund (won't block the status change). The
+      // idempotency key prevents a duplicate refund if this runs twice.
+      if (existing.stripePaymentIntentId && isStripeConfigured()) {
+        try {
+          await getStripe().refunds.create(
+            { payment_intent: existing.stripePaymentIntentId },
+            { idempotencyKey: "refund_" + id },
+          );
+        } catch (err) {
+          console.error("[refund] Stripe refund failed:", err);
+        }
       }
     }
   }

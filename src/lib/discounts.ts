@@ -22,8 +22,10 @@ export async function checkDiscount(raw: string | null | undefined): Promise<Dis
     const popup = await getSetting("popup");
     if (popup && popup.code && popup.code.toUpperCase() === code && popup.enabled) {
       const m = (popup.message || "").match(/(\d{1,2})\s*%/);
+      // No percentage in the popup message → no discount (don't silently grant 15%).
+      if (!m) return null;
       // Clamp to a sane max so a typo'd popup ("90% off") can't near-zero an order.
-      const pct = Math.min(0.5, m ? Number(m[1]) / 100 : 0.15);
+      const pct = Math.min(0.5, Number(m[1]) / 100);
       return { code, pct, label: Math.round(pct * 100) + "% off" };
     }
   } catch {

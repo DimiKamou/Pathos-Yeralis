@@ -41,18 +41,29 @@ export async function priceCart(
   cart: CartInput[],
   discountCode?: string | null,
 ): Promise<PricedCart> {
-  const ids = [...new Set(cart.map((c) => c.id))];
+  // Cap cart size to prevent resource-exhaustion (e.g. a 10,000-line order):
+  // only ever process the first 100 entries.
+  const boundedCart = cart.slice(0, 100);
+  const ids = [...new Set(boundedCart.map((c) => c.id))];
   const products = await prisma.product.findMany({ where: { id: { in: ids } } });
   const byId = new Map(products.map((p) => [p.id, p]));
 
   const lines: PricedLine[] = [];
   const unavailable: { name: string; reason: string }[] = [];
-  for (const c of cart) {
+  for (const c of boundedCart) {
     const p = byId.get(c.id);
     if (!p) continue; // silently drop unknown ids
-    const qty = Math.max(1, Math.min(99, Math.floor(c.qty || 1)));
     const variant = c.variant ? String(c.variant) : null;
     const name = p.name + (variant ? " · " + variant : "");
+    // Reject non-positive / non-integer / NaN quantities instead of silently
+    // coercing them to 1 — such a line is treated as UNAVAILABLE so the order
+    // is refused (allAvailable=false) rather than charged as qty 1. The upper
+    // bound is still clamped at 99.
+    if (!Number.isInteger(c.qty) || c.qty < 1) {
+      unavailable.push({ name, reason: "invalid quantity" });
+      continue;
+    }
+    const qty = Math.min(99, c.qty);
     if (p.status !== "Active") unavailable.push({ name, reason: "no longer available" });
     else if (p.stock < qty) unavailable.push({ name, reason: p.stock <= 0 ? "out of stock" : `only ${p.stock} left` });
     lines.push({ productId: p.id, art: p.art, name, variant, qty, priceCents: p.priceCents });
@@ -144,15 +155,48 @@ export async function createOrder(params: {
   giftMessage?: string | null;
 }) {
   const { contact, priced, payment, method, stripePaymentIntentId, isGift, giftMessage } = params;
-  // Atomic: create the order + lines, bump `sold`, and decrement stock ONLY
-  // when there's enough (the `stock >= qty` guard means stock never goes
-  // negative). `updateMany` is used so a product deleted mid-checkout can't
-  // throw and roll back a paid order. Retries on an order-number collision.
-  for (let attempt = 0; attempt < 5; attempt++) {
+  // Atomic + race-safe: an INTERACTIVE transaction that (1) for each line moves
+  // `stock` and `sold` together with a guarded `updateMany` and verifies exactly
+  // one row changed (so the last unit can never be oversold and `sold` stays in
+  // sync), (2) guards the discount `maxUses` cap with a conditional UPDATE, and
+  // only then (3) creates the order + lines. Any guard failure throws and rolls
+  // the whole transaction back, so no order is created. Retries on an order
+  // number collision (P2002) AND on transient DB contention (e.g. SQLite write
+  // locks / socket timeouts under concurrent checkout) — OUT_OF_STOCK /
+  // DISCOUNT_LIMIT are business rejections and propagate immediately.
+  for (let attempt = 0; attempt < 8; attempt++) {
     const number = await nextOrderNumber();
     try {
-      const [order] = await prisma.$transaction([
-        prisma.order.create({
+      const order = await prisma.$transaction(async (tx) => {
+        // 1) Guarded stock decrement + sold increment, together, per line.
+        for (const l of priced.lines) {
+          const res = await tx.product.updateMany({
+            where: { id: l.productId, status: "Active", stock: { gte: l.qty } },
+            data: { stock: { decrement: l.qty }, sold: { increment: l.qty } },
+          });
+          if (res.count !== 1) {
+            const e = new Error("OUT_OF_STOCK");
+            (e as Error & { code?: string }).code = "OUT_OF_STOCK";
+            throw e;
+          }
+        }
+
+        // 2) Guarded discount-usage cap. 0 rows means either a popup/non-table
+        // code (no row → fine, skip) OR a table code that just hit its cap (reject).
+        if (priced.discount) {
+          const updated = await tx.$executeRaw`UPDATE "Discount" SET "uses" = "uses" + 1 WHERE "code" = ${priced.discount.code} AND ("maxUses" IS NULL OR "uses" < "maxUses")`;
+          if (updated === 0) {
+            const row = await tx.discount.findUnique({ where: { code: priced.discount.code } });
+            if (row) {
+              const e = new Error("DISCOUNT_LIMIT");
+              (e as Error & { code?: string }).code = "DISCOUNT_LIMIT";
+              throw e;
+            }
+          }
+        }
+
+        // 3) Create the order + lines.
+        const order = await tx.order.create({
           data: {
             number,
             customer: contact.name || "Guest",
@@ -185,23 +229,30 @@ export async function createOrder(params: {
             },
           },
           include: { lines: true },
-        }),
-        ...priced.lines.map((l) =>
-          prisma.product.updateMany({ where: { id: l.productId }, data: { sold: { increment: l.qty } } }),
-        ),
-        ...priced.lines.map((l) =>
-          prisma.product.updateMany({ where: { id: l.productId, stock: { gte: l.qty } }, data: { stock: { decrement: l.qty } } }),
-        ),
-        ...(priced.discount ? [prisma.discount.updateMany({ where: { code: priced.discount.code }, data: { uses: { increment: 1 } } })] : []),
-      ]);
+        });
+        return order;
+      }, { timeout: 15000, maxWait: 10000 });
       // Best-effort: mark any abandoned-cart snapshot for this email recovered.
       await prisma.abandonedCart.updateMany({ where: { email: contact.email.toLowerCase() }, data: { recovered: true } }).catch(() => {});
       return order;
     } catch (e) {
-      // P2002 = unique violation on `number`; regenerate and retry.
-      if ((e as { code?: string }).code === "P2002" && attempt < 4) continue;
+      const code = (e as { code?: string }).code;
+      // Business rejections must never be retried — propagate to the caller.
+      if (code === "OUT_OF_STOCK" || code === "DISCOUNT_LIMIT") throw e;
+      // Retry on order-number collisions and transient DB contention (SQLite
+      // write-lock / socket timeout / deadlock) with jittered backoff. This
+      // turns a burst of concurrent checkouts into success-or-clean-OUT_OF_STOCK
+      // instead of a 500.
+      const msg = (e as { message?: string }).message || "";
+      const transient =
+        code === "P2002" || code === "P2024" || code === "P2028" || code === "P2034" || code === "P1008" ||
+        /socket timeout|database is locked|timed out|deadlock|write conflict/i.test(msg);
+      if (transient && attempt < 7) {
+        await new Promise((r) => setTimeout(r, 30 + Math.floor(Math.random() * 90) * (attempt + 1)));
+        continue;
+      }
       throw e;
     }
   }
-  throw new Error("Could not allocate an order number");
+  throw new Error("Could not place the order — please try again");
 }

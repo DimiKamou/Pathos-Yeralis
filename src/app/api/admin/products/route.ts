@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { serializeProduct } from "@/lib/products";
 import { getProductsAdmin } from "@/lib/admin-data";
@@ -42,23 +43,31 @@ export async function POST(req: Request) {
   }
   const id = data.id?.trim() || `${ART_PREFIX[data.art] || "PX"}-${Math.floor(100 + Math.random() * 900)}`;
   const count = await prisma.product.count();
-  const product = await prisma.product.create({
-    data: {
-      id,
-      name: data.name,
-      art: data.art,
-      collection: data.collection,
-      priceCents: Math.round(data.price * 100),
-      stock: data.stock,
-      status: data.status,
-      sold: data.sold,
-      material: data.material ?? null,
-      swatches: JSON.stringify(data.swatches),
-      description: data.desc ?? null,
-      images: JSON.stringify(data.images),
-      imageUrl: data.images[0] ?? data.imageUrl ?? null,
-      position: count,
-    },
-  });
+  let product;
+  try {
+    product = await prisma.product.create({
+      data: {
+        id,
+        name: data.name,
+        art: data.art,
+        collection: data.collection,
+        priceCents: Math.round(data.price * 100),
+        stock: data.stock,
+        status: data.status,
+        sold: data.sold,
+        material: data.material ?? null,
+        swatches: JSON.stringify(data.swatches),
+        description: data.desc ?? null,
+        images: JSON.stringify(data.images),
+        imageUrl: data.images[0] ?? data.imageUrl ?? null,
+        position: count,
+      },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return NextResponse.json({ ok: false, error: "A product with that SKU already exists." }, { status: 409 });
+    }
+    throw err;
+  }
   return NextResponse.json({ ok: true, product: serializeProduct(product) });
 }

@@ -37,6 +37,7 @@ export function serializeProduct(p: Product): StoreProduct {
 
 export async function getStoreProducts(): Promise<StoreProduct[]> {
   const rows = await prisma.product.findMany({
+    where: { status: "Active" },
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
   });
   return rows.map(serializeProduct);

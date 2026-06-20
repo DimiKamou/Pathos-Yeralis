@@ -47,7 +47,20 @@ export async function POST(req: Request) {
   }
 
   const contact: ContactInput = data.contact;
-  const order = await createOrder({ contact, priced, payment: "Paid", method: "Card (demo)", isGift: data.isGift, giftMessage: data.giftMessage });
+  let order;
+  try {
+    order = await createOrder({ contact, priced, payment: "Paid", method: "Card (demo)", isGift: data.isGift, giftMessage: data.giftMessage });
+  } catch (e) {
+    // Concurrency races that slip past the priceCart pre-check above.
+    const code = (e as { code?: string }).code;
+    if (code === "OUT_OF_STOCK") {
+      return NextResponse.json({ ok: false, error: "Sorry — an item just sold out. Please review your cart." }, { status: 409 });
+    }
+    if (code === "DISCOUNT_LIMIT") {
+      return NextResponse.json({ ok: false, error: "That discount code just reached its limit." }, { status: 409 });
+    }
+    throw e;
+  }
 
   await prisma.subscriber
     .upsert({

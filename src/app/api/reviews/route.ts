@@ -25,8 +25,8 @@ export async function GET(req: Request) {
 const schema = z.object({
   productId: z.string().min(1),
   rating: z.number().int().min(1).max(5),
-  name: z.string().min(1),
-  body: z.string().min(1),
+  name: z.string().trim().min(1).max(120),
+  body: z.string().trim().min(1).max(2000),
 });
 
 // Shopper-submitted review → pending moderation (approved:false).

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 const schema = z.object({ read: z.boolean() });
@@ -12,12 +13,26 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid input" }, { status: 400 });
   }
-  await prisma.message.update({ where: { id }, data: { read: data.read } });
+  try {
+    await prisma.message.update({ where: { id }, data: { read: data.read } });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+      return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+    }
+    throw err;
+  }
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await prisma.message.delete({ where: { id } });
+  try {
+    await prisma.message.delete({ where: { id } });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+      return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+    }
+    throw err;
+  }
   return NextResponse.json({ ok: true });
 }

@@ -14,6 +14,21 @@ import {
 export { SESSION_COOKIE, createSessionToken, verifySessionToken };
 export type { AdminSession };
 
+// Node-side secret accessor mirroring auth-edge's fail-closed policy. The JWT
+// sign/verify path resolves its key inside auth-edge; this is the node-runtime
+// equivalent for any server-only consumer that needs the raw secret. It never
+// falls back to a known secret in production.
+const DEV_ONLY_SECRET = "dev-only-insecure-secret-do-not-use-in-prod";
+
+export function nodeSessionSecret(): string {
+  const s = process.env.ADMIN_SESSION_SECRET;
+  if (s && s.length >= 16) return s;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("ADMIN_SESSION_SECRET must be set to a strong value (16+ chars) in production");
+  }
+  return DEV_ONLY_SECRET;
+}
+
 // Verify credentials against the AdminUser table.
 export async function authenticate(email: string, password: string): Promise<AdminSession | null> {
   const user = await prisma.adminUser.findUnique({ where: { email: email.trim().toLowerCase() } });
@@ -41,7 +56,7 @@ export async function setSessionCookie(token: string): Promise<void> {
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
     maxAge: SESSION_MAX_AGE,
   });
