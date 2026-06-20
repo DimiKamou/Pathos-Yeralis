@@ -37,6 +37,22 @@ model Product {
   updatedAt  DateTime @updatedAt
 
   orderLines OrderLine[]
+  reviews    Review[]
+}
+
+// Customer product reviews (moderated: shown on the storefront once approved).
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating    Int // 1–5
+  name      String
+  body      String
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([approved])
 }
 
 // Customer orders (was PathosStore `orders`).
@@ -49,6 +65,7 @@ model Order {
   totalCents   Int
   subtotalCents Int     @default(0)
   shippingCents Int     @default(0)
+  taxCents      Int     @default(0)
   payment      String   @default("Awaiting payment") // Paid | Awaiting payment | Refunded
   method       String // Card | Apple Pay | Google Pay | Bank transfer
   fulfillment  String   @default("Unfulfilled") // Unfulfilled | Shipped | Delivered

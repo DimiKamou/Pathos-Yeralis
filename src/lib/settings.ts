@@ -6,6 +6,7 @@
 import { prisma } from "./prisma";
 import type {
   AnnouncementSetting,
+  CommerceSetting,
   ContactSetting,
   FooterSetting,
   MenuItem,
@@ -109,11 +110,21 @@ export const DEFAULT_FOOTER: FooterSetting = {
   ],
 };
 
+// Tax + shipping. Defaults reproduce the current behavior (no tax line, €5 flat
+// shipping, free over €100) so nothing changes until the owner configures it.
+export const DEFAULT_COMMERCE: CommerceSetting = {
+  taxRatePct: 0,
+  taxIncluded: true,
+  shippingFlatCents: 500,
+  freeShipThresholdCents: 10000,
+};
+
 export const DEFAULT_SETTINGS: StoreSettings = {
   menu: DEFAULT_MENU,
   collections: DEFAULT_COLLECTIONS,
   contact: DEFAULT_CONTACT,
   footer: DEFAULT_FOOTER,
+  commerce: DEFAULT_COMMERCE,
   popup: DEFAULT_POPUP,
   announcement: DEFAULT_ANNOUNCEMENT,
   season: DEFAULT_SEASON,
@@ -155,6 +166,7 @@ export async function getAllSettings(): Promise<StoreSettings> {
     collections: mergeDefault("collections", map.get("collections")),
     contact: mergeDefault("contact", map.get("contact")),
     footer: mergeDefault("footer", map.get("footer")),
+    commerce: mergeDefault("commerce", map.get("commerce")),
     popup: mergeDefault("popup", map.get("popup")),
     announcement: mergeDefault("announcement", map.get("announcement")),
     season: mergeDefault("season", map.get("season")),

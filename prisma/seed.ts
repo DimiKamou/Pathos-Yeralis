@@ -85,6 +85,10 @@ const SETTINGS: { key: string; value: object }[] = [
     },
   },
   {
+    key: "commerce",
+    value: { taxRatePct: 0, taxIncluded: true, shippingFlatCents: 500, freeShipThresholdCents: 10000 },
+  },
+  {
     key: "popup",
     value: {
       enabled: true,

@@ -96,11 +96,19 @@ export interface FooterSetting {
   columns: FooterColumn[];
 }
 
+export interface CommerceSetting {
+  taxRatePct: number; // 0 = no tax line; e.g. 24 for 24% VAT
+  taxIncluded: boolean; // true = displayed prices already include tax
+  shippingFlatCents: number;
+  freeShipThresholdCents: number;
+}
+
 export interface StoreSettings {
   menu: MenuItem[];
   collections: string[];
   contact: ContactSetting;
   footer: FooterSetting;
+  commerce: CommerceSetting;
   popup: PopupSetting;
   announcement: AnnouncementSetting;
   season: SeasonSetting;

@@ -39,6 +39,12 @@ const valueSchemas = {
       z.object({ title: z.string(), links: z.array(z.object({ label: z.string(), href: z.string() })) }),
     ),
   }),
+  commerce: z.object({
+    taxRatePct: z.number().min(0).max(100),
+    taxIncluded: z.boolean(),
+    shippingFlatCents: z.number().int().min(0),
+    freeShipThresholdCents: z.number().int().min(0),
+  }),
   popup: z.object({
     enabled: z.boolean(),
     heading: z.string(),

@@ -20,6 +20,7 @@ export interface ClientOrder {
   fulfillment: string;
   subtotalEur: number;
   shippingEur: number;
+  taxEur: number;
   discountEur: number;
   discountCode: string | null;
   totalEur: number;
@@ -39,6 +40,7 @@ export function serializeOrderForClient(order: Order & { lines?: OrderLine[] }):
     fulfillment: order.fulfillment,
     subtotalEur: order.subtotalCents / 100,
     shippingEur: order.shippingCents / 100,
+    taxEur: order.taxCents / 100,
     discountEur: (order.discountCents ?? 0) / 100,
     discountCode: order.discountCode,
     totalEur: order.totalCents / 100,
