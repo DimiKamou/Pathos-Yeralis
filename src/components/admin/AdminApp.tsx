@@ -14,6 +14,7 @@ import { Collections } from "@/components/admin/views/Collections";
 import { Inventory } from "@/components/admin/views/Inventory";
 import { Deliveries } from "@/components/admin/views/Deliveries";
 import { Customers } from "@/components/admin/views/Customers";
+import { AbandonedCarts } from "@/components/admin/views/AbandonedCarts";
 import { Inbox } from "@/components/admin/views/Inbox";
 import { Reviews } from "@/components/admin/views/Reviews";
 import { Discounts } from "@/components/admin/views/Discounts";
@@ -40,6 +41,7 @@ const NAV: NavEntry[] = [
   { id: "inventory", label: "Inventory", icon: Icon.box },
   { id: "deliveries", label: "Deliveries", icon: Icon.truck },
   { id: "customers", label: "Customers", icon: Icon.users },
+  { id: "abandoned", label: "Abandoned carts", icon: Icon.bell },
   { id: "inbox", label: "Inbox", icon: Icon.inbox },
   { id: "reviews", label: "Reviews", icon: Icon.star },
   { id: "discounts", label: "Discounts", icon: Icon.tag },
@@ -62,6 +64,7 @@ const VIEWS: Record<string, (p: ViewProps) => React.ReactNode> = {
   inventory: Inventory,
   deliveries: Deliveries,
   customers: Customers,
+  abandoned: AbandonedCarts,
   inbox: Inbox,
   reviews: Reviews,
   discounts: Discounts,

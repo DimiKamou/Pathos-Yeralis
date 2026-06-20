@@ -149,6 +149,19 @@ export function Checkout({ bank, commerce }: { bank: BankDetails; commerce: Comm
     clear();
   };
 
+  // Fire-and-forget abandoned-cart snapshot when the shopper reaches Payment.
+  const captureCart = () => {
+    try {
+      fetch("/api/cart/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: info.email, cart }),
+      }).catch(() => {});
+    } catch {
+      /* ignore */
+    }
+  };
+
   const placeBank = async () => {
     if (placing) return;
     setPlacing(true);
@@ -249,7 +262,7 @@ export function Checkout({ bank, commerce }: { bank: BankDetails; commerce: Comm
                   )}
                 </div>
                 <div className="flex items-center gap-2.5 border-t border-ink/10 px-6 py-4">
-                  <button onClick={() => setStep(1)} disabled={!step0Ok} className={`ml-auto rounded-lg px-5 py-2.5 text-[12.5px] font-medium text-paper transition-colors ${step0Ok ? "bg-ink hover:bg-ink/90" : "cursor-not-allowed bg-ink/30"}`}>Continue</button>
+                  <button onClick={() => { captureCart(); setStep(1); }} disabled={!step0Ok} className={`ml-auto rounded-lg px-5 py-2.5 text-[12.5px] font-medium text-paper transition-colors ${step0Ok ? "bg-ink hover:bg-ink/90" : "cursor-not-allowed bg-ink/30"}`}>Continue</button>
                 </div>
               </>
             ) : (

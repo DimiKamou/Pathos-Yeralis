@@ -50,6 +50,23 @@ export interface AdminReview {
   createdAt: string;
 }
 
+export interface AdminAbandonedCart {
+  id: string;
+  email: string;
+  itemCount: number;
+  valueEur: number;
+  items: { name: string; qty: number }[];
+  updatedAt: string;
+}
+export async function getAbandonedCarts(): Promise<AdminAbandonedCart[]> {
+  const rows = await prisma.abandonedCart.findMany({ where: { recovered: false }, orderBy: { updatedAt: "desc" } });
+  return rows.map((r) => {
+    let items: { name: string; qty: number }[] = [];
+    try { items = JSON.parse(r.itemsJson); } catch { /* ignore */ }
+    return { id: r.id, email: r.email, itemCount: r.itemCount, valueEur: r.valueCents / 100, items, updatedAt: r.updatedAt.toISOString() };
+  });
+}
+
 export async function getOrders(): Promise<ClientOrder[]> {
   const rows = await prisma.order.findMany({ orderBy: { createdAt: "desc" }, include: { lines: true } });
   return rows.map(serializeOrderForClient);

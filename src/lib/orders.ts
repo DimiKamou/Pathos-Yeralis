@@ -194,6 +194,8 @@ export async function createOrder(params: {
         ),
         ...(priced.discount ? [prisma.discount.updateMany({ where: { code: priced.discount.code }, data: { uses: { increment: 1 } } })] : []),
       ]);
+      // Best-effort: mark any abandoned-cart snapshot for this email recovered.
+      await prisma.abandonedCart.updateMany({ where: { email: contact.email.toLowerCase() }, data: { recovered: true } }).catch(() => {});
       return order;
     } catch (e) {
       // P2002 = unique violation on `number`; regenerate and retry.

@@ -156,6 +156,22 @@ model Setting {
   updatedAt DateTime @updatedAt
 }
 
+// Abandoned carts — captured when a shopper reaches the Payment step with valid
+// details but doesn't complete the order, so the seller can follow up manually.
+// One row per email (upserted); marked recovered when that email later orders.
+model AbandonedCart {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  itemsJson String   // JSON text: [{ name, qty }]
+  itemCount Int      @default(0)
+  valueCents Int     @default(0)
+  recovered Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recovered])
+}
+
 // Admin login (storefront checkout stays guest-first).
 model AdminUser {
   id           String   @id @default(cuid())
