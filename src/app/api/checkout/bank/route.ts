@@ -33,6 +33,12 @@ export async function POST(req: Request) {
   if (priced.lines.length === 0) {
     return NextResponse.json({ ok: false, error: "Your bag is empty" }, { status: 400 });
   }
+  if (!priced.allAvailable) {
+    return NextResponse.json(
+      { ok: false, error: "Some items are no longer available", unavailable: priced.unavailable },
+      { status: 409 },
+    );
+  }
 
   const contact: ContactInput = data.contact;
   const order = await createOrder({

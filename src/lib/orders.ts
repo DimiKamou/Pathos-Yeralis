@@ -30,9 +30,13 @@ export interface PricedCart {
   discountCents: number;
   shippingCents: number;
   totalCents: number;
+  allAvailable: boolean;
+  unavailable: { name: string; reason: string }[];
 }
 
 // Recompute a cart from DB product data + a (server-validated) discount code.
+// Also reports availability (Active status + enough stock) so the caller can
+// refuse to charge for sold-out / draft / oversold items BEFORE taking money.
 export async function priceCart(
   cart: CartInput[],
   discountCode?: string | null,
@@ -42,19 +46,16 @@ export async function priceCart(
   const byId = new Map(products.map((p) => [p.id, p]));
 
   const lines: PricedLine[] = [];
+  const unavailable: { name: string; reason: string }[] = [];
   for (const c of cart) {
     const p = byId.get(c.id);
     if (!p) continue; // silently drop unknown ids
     const qty = Math.max(1, Math.min(99, Math.floor(c.qty || 1)));
     const variant = c.variant ? String(c.variant) : null;
-    lines.push({
-      productId: p.id,
-      art: p.art,
-      name: p.name + (variant ? " · " + variant : ""),
-      variant,
-      qty,
-      priceCents: p.priceCents,
-    });
+    const name = p.name + (variant ? " · " + variant : "");
+    if (p.status !== "Active") unavailable.push({ name, reason: "no longer available" });
+    else if (p.stock < qty) unavailable.push({ name, reason: p.stock <= 0 ? "out of stock" : `only ${p.stock} left` });
+    lines.push({ productId: p.id, art: p.art, name, variant, qty, priceCents: p.priceCents });
   }
 
   const subtotalCents = lines.reduce((s, l) => s + l.priceCents * l.qty, 0);
@@ -67,7 +68,16 @@ export async function priceCart(
       : SHIPPING_FLAT_CENTS;
   const totalCents = Math.max(0, subtotalCents - discountCents) + shippingCents;
 
-  return { lines, subtotalCents, discount, discountCents, shippingCents, totalCents };
+  return {
+    lines,
+    subtotalCents,
+    discount,
+    discountCents,
+    shippingCents,
+    totalCents,
+    allAvailable: unavailable.length === 0,
+    unavailable,
+  };
 }
 
 // Generate a unique human-readable order number, e.g. "PA-2842".
@@ -115,51 +125,58 @@ export async function createOrder(params: {
   stripePaymentIntentId?: string | null;
 }) {
   const { contact, priced, payment, method, stripePaymentIntentId } = params;
-  const number = await nextOrderNumber();
-  // Create the order AND adjust inventory atomically: each line decrements its
-  // product's stock (floored at 0) and bumps `sold`. This is what keeps the
-  // admin Inventory/Products stock figures up to date automatically.
-  const [order] = await prisma.$transaction([
-    prisma.order.create({
-      data: {
-        number,
-        customer: contact.name || "Guest",
-        email: contact.email,
-        country: countryCode(contact.country),
-        subtotalCents: priced.subtotalCents,
-        shippingCents: priced.shippingCents,
-        totalCents: priced.totalCents,
-        payment,
-        method,
-        discountCode: priced.discount?.code ?? null,
-        discountPct: priced.discount?.pct ?? null,
-        discountCents: priced.discountCents || null,
-        shipAddress: contact.address ?? null,
-        shipCity: contact.city ?? null,
-        shipZip: contact.zip ?? null,
-        stripePaymentIntentId: stripePaymentIntentId ?? null,
-        lines: {
-          create: priced.lines.map((l) => ({
-            productId: l.productId,
-            art: l.art,
-            name: l.name,
-            variant: l.variant,
-            qty: l.qty,
-            priceCents: l.priceCents,
-          })),
-        },
-      },
-      include: { lines: true },
-    }),
-    ...priced.lines.map((l) =>
-      prisma.product.update({
-        where: { id: l.productId },
-        data: { stock: { decrement: l.qty }, sold: { increment: l.qty } },
-      }),
-    ),
-  ]);
-
-  // Guard against negative stock from races (SQLite has no per-row clamp).
-  await prisma.product.updateMany({ where: { stock: { lt: 0 } }, data: { stock: 0 } });
-  return order;
+  // Atomic: create the order + lines, bump `sold`, and decrement stock ONLY
+  // when there's enough (the `stock >= qty` guard means stock never goes
+  // negative). `updateMany` is used so a product deleted mid-checkout can't
+  // throw and roll back a paid order. Retries on an order-number collision.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const number = await nextOrderNumber();
+    try {
+      const [order] = await prisma.$transaction([
+        prisma.order.create({
+          data: {
+            number,
+            customer: contact.name || "Guest",
+            email: contact.email,
+            country: countryCode(contact.country),
+            subtotalCents: priced.subtotalCents,
+            shippingCents: priced.shippingCents,
+            totalCents: priced.totalCents,
+            payment,
+            method,
+            discountCode: priced.discount?.code ?? null,
+            discountPct: priced.discount?.pct ?? null,
+            discountCents: priced.discountCents || null,
+            shipAddress: contact.address ?? null,
+            shipCity: contact.city ?? null,
+            shipZip: contact.zip ?? null,
+            stripePaymentIntentId: stripePaymentIntentId ?? null,
+            lines: {
+              create: priced.lines.map((l) => ({
+                productId: l.productId,
+                art: l.art,
+                name: l.name,
+                variant: l.variant,
+                qty: l.qty,
+                priceCents: l.priceCents,
+              })),
+            },
+          },
+          include: { lines: true },
+        }),
+        ...priced.lines.map((l) =>
+          prisma.product.updateMany({ where: { id: l.productId }, data: { sold: { increment: l.qty } } }),
+        ),
+        ...priced.lines.map((l) =>
+          prisma.product.updateMany({ where: { id: l.productId, stock: { gte: l.qty } }, data: { stock: { decrement: l.qty } } }),
+        ),
+      ]);
+      return order;
+    } catch (e) {
+      // P2002 = unique violation on `number`; regenerate and retry.
+      if ((e as { code?: string }).code === "P2002" && attempt < 4) continue;
+      throw e;
+    }
+  }
+  throw new Error("Could not allocate an order number");
 }

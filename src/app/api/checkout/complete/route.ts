@@ -63,6 +63,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Your bag is empty" }, { status: 400 });
   }
 
+  // Security: the amount actually captured by Stripe must equal the
+  // server-recomputed total. Otherwise a tampered/stale cart could record a
+  // different total than was charged.
+  if (intent.amount !== priced.totalCents || intent.currency !== "eur") {
+    return NextResponse.json(
+      { ok: false, error: "Payment amount mismatch — please contact support.", code: "amount_mismatch" },
+      { status: 409 },
+    );
+  }
+
   const contact: ContactInput = data.contact;
   const method = METHOD_LABEL[data.method ?? "card"] ?? "Card";
   const order = await createOrder({
