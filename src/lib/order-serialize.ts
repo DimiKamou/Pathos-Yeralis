@@ -31,6 +31,7 @@ export interface ClientOrder {
   trackingNumber: string | null;
   isGift: boolean;
   giftMessage: string | null;
+  note: string | null;
   createdAt: string;
   lines: ClientOrderLine[];
 }
@@ -58,6 +59,7 @@ export function serializeOrderForClient(order: Order & { lines?: OrderLine[] }):
     trackingNumber: order.trackingNumber,
     isGift: order.isGift,
     giftMessage: order.giftMessage,
+    note: order.note,
     createdAt: order.createdAt.toISOString(),
     lines: (order.lines ?? []).map((l) => ({
       name: l.name,

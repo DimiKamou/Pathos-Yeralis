@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import { eur } from "@/lib/money";
 import { Icon } from "@/components/admin/icons";
 import type { ClientOrder } from "@/lib/order-serialize";
-import { Card, Chip, PageHeader, Spinner, EmptyState, fmtDate, paymentTone, fulfillmentTone, type ViewProps } from "./_shared";
+import { Card, Chip, PageHeader, Spinner, EmptyState, Btn, fmtDate, paymentTone, fulfillmentTone, type ViewProps } from "./_shared";
 
 interface Customer {
   email: string;
@@ -47,9 +47,48 @@ export function Customers(_props: ViewProps) {
     ? customers.filter((c) => c.name.toLowerCase().includes(ql) || c.email.toLowerCase().includes(ql))
     : customers;
 
+  function exportCsv() {
+    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const header = ["name", "email", "country", "orders", "spent_eur", "last_order"];
+    const rows = customers.map((c) =>
+      [
+        c.name,
+        c.email,
+        c.country,
+        c.orders,
+        c.spent.toFixed(2),
+        c.last.slice(0, 10),
+      ]
+        .map(esc)
+        .join(","),
+    );
+    const csv = [header.map(esc).join(","), ...rows].join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pathos-customers.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div>
-      <PageHeader title="Customers" subtitle={`${customers.length} customer${customers.length === 1 ? "" : "s"} from orders.`} />
+      <PageHeader
+        title="Customers"
+        subtitle={`${customers.length} customer${customers.length === 1 ? "" : "s"} from orders.`}
+        action={
+          <button
+            onClick={exportCsv}
+            disabled={customers.length === 0}
+            className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-4 py-2 text-[12.5px] font-semibold text-ink/80 hover:bg-ink/[0.04] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Export CSV
+          </button>
+        }
+      />
       {customers.length === 0 ? (
         <EmptyState icon={<Icon.users size={34} />} title="No customers yet" body="Customers appear here once orders come in." />
       ) : (

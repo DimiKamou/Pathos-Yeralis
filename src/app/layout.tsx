@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { JsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 
@@ -17,6 +17,13 @@ export const metadata: Metadata = {
     siteName: "PATHOS by Yeralis",
   },
   twitter: { card: "summary_large_image", title: "PATHOS by Yeralis", description: DESCRIPTION },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f0e6" },
+    { media: "(prefers-color-scheme: dark)", color: "#2a241e" },
+  ],
 };
 
 // Pre-paint theme: apply saved dark mode before first paint to avoid a flash.

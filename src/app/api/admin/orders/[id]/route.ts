@@ -10,6 +10,7 @@ const schema = z.object({
   fulfillment: z.enum(["Unfulfilled", "Shipped", "Delivered"]).optional(),
   trackingCarrier: z.string().max(60).nullable().optional(),
   trackingNumber: z.string().max(120).nullable().optional(),
+  note: z.string().max(2000).nullable().optional(),
 });
 
 // Update order status. Marking Refunded restocks the items (+ refunds via

@@ -17,6 +17,8 @@ export function Orders(_props: ViewProps) {
   const [shipOrder, setShipOrder] = useState<ClientOrder | null>(null);
   const [carrier, setCarrier] = useState("");
   const [tracking, setTracking] = useState("");
+  const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
+  const [savingNote, setSavingNote] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -45,6 +47,30 @@ export function Orders(_props: ViewProps) {
       if (data.order) setOrders((prev) => prev.map((o) => (o.id === id ? data.order : o)));
     } catch {
       /* keep optimistic state */
+    }
+  }
+
+  async function saveNote(id: string, note: string) {
+    setSavingNote(id);
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note }),
+      });
+      const data = await res.json();
+      if (data.order) {
+        setOrders((prev) => prev.map((o) => (o.id === id ? data.order : o)));
+        setNoteDraft((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }
+    } catch {
+      /* leave draft in place so the seller can retry */
+    } finally {
+      setSavingNote(null);
     }
   }
 
@@ -216,6 +242,28 @@ export function Orders(_props: ViewProps) {
                                   <Btn variant="ghost" onClick={() => setSlipOrder(o)} className="w-full">
                                     Print packing slip
                                   </Btn>
+                                </div>
+                                <div className="mt-3 border-t border-ink/10 pt-3">
+                                  <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-mute">
+                                    Internal note (staff only)
+                                  </div>
+                                  <textarea
+                                    value={noteDraft[o.id] ?? o.note ?? ""}
+                                    onChange={(e) => setNoteDraft((prev) => ({ ...prev, [o.id]: e.target.value }))}
+                                    placeholder="e.g. called customer, gift-wrap requested, left with neighbour…"
+                                    rows={3}
+                                    className="w-full resize-y rounded-lg border border-ink/15 bg-paper px-3 py-2 text-[12.5px] text-ink placeholder:text-mute focus:border-gold focus:outline-none"
+                                  />
+                                  <div className="mt-2 flex justify-end">
+                                    <Btn
+                                      variant="primary"
+                                      onClick={() => saveNote(o.id, (noteDraft[o.id] ?? o.note ?? "").trim())}
+                                      disabled={savingNote === o.id || (noteDraft[o.id] ?? o.note ?? "") === (o.note ?? "")}
+                                      className="!px-4 !py-1.5"
+                                    >
+                                      {savingNote === o.id ? "Saving…" : "Save note"}
+                                    </Btn>
+                                  </div>
                                 </div>
                               </div>
                             </div>
