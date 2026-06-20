@@ -88,11 +88,27 @@ ${row("Reference", "#" + o.number)}
 
 // ── Campaign / newsletter (parameterized port of PATHOS Newsletter.html) ──
 // Sent when an admin marks an order Shipped.
-export function shippedHtml(o: { number: string; customer: string }): string {
+export function shippedHtml(o: {
+  number: string;
+  customer: string;
+  trackingCarrier?: string | null;
+  trackingNumber?: string | null;
+}): string {
+  const trackRow = (k: string, v: string) =>
+    `<tr><td style="padding:4px 0;font-size:13px;color:${MUTE};">${k}</td><td align="right" style="padding:4px 0;font-size:13px;color:${INK};font-family:monospace;">${v}</td></tr>`;
+  const trackingCard = o.trackingNumber
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:${CARD};border:1px solid #ece2d2;border-radius:10px;padding:8px 16px;margin:22px auto 0;max-width:400px;">
+<tr><td colspan="2" style="padding:6px 0;"></td></tr>
+${o.trackingCarrier ? trackRow("Carrier", o.trackingCarrier) : ""}
+${trackRow("Tracking number", o.trackingNumber)}
+<tr><td colspan="2" style="padding:6px 0;"></td></tr>
+</table>`
+    : "";
   return shell(`
 <tr><td style="background:${PAPER};padding:42px 48px;" align="center">
 <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;font-weight:500;color:${INK};">On its way, ${o.customer.split(" ")[0]}!</div>
 <p style="font-size:14px;font-weight:300;line-height:1.85;color:${MUTE};max-width:400px;margin:14px auto 0;">Good news — your order <strong style="color:${INK};">#${o.number}</strong> has shipped and is on its way to you. Thank you for supporting our atelier.</p>
+${trackingCard}
 </td></tr>`);
 }
 

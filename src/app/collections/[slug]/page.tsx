@@ -6,7 +6,10 @@ import { effectiveSeason, SEASONS } from "@/lib/seasons";
 import { StoreShell } from "@/components/storefront/StoreShell";
 import { CollectionView } from "@/components/storefront/CollectionView";
 import { slugify, unslug } from "@/lib/slug";
+import { JsonLd, itemListJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +41,16 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
 
   return (
     <div style={styleVars}>
+      <JsonLd
+        data={[
+          itemListJsonLd(products, `${SITE_URL}/collections/${slug}`),
+          breadcrumbJsonLd([
+            { name: "Home", url: SITE_URL },
+            { name: "Collections", url: SITE_URL + "/collections" },
+            { name: label, url: SITE_URL + "/collections/" + slug },
+          ]),
+        ]}
+      />
       <StoreShell products={allProducts} settings={settings} bank={BANK}>
         <CollectionView
           label={label}

@@ -75,6 +75,8 @@ model Order {
   shipAddress  String?
   shipCity     String?
   shipZip      String?
+  trackingCarrier String?
+  trackingNumber  String?
 
   stripePaymentIntentId String? @unique
   online       Boolean  @default(true)

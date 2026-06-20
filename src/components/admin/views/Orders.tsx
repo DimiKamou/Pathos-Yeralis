@@ -14,6 +14,9 @@ export function Orders(_props: ViewProps) {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [slipOrder, setSlipOrder] = useState<ClientOrder | null>(null);
+  const [shipOrder, setShipOrder] = useState<ClientOrder | null>(null);
+  const [carrier, setCarrier] = useState("");
+  const [tracking, setTracking] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -26,7 +29,10 @@ export function Orders(_props: ViewProps) {
     };
   }, []);
 
-  async function patch(id: string, body: { payment?: string; fulfillment?: string }) {
+  async function patch(
+    id: string,
+    body: { payment?: string; fulfillment?: string; trackingCarrier?: string | null; trackingNumber?: string | null },
+  ) {
     // optimistic
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...body } : o)));
     try {
@@ -130,7 +136,11 @@ export function Orders(_props: ViewProps) {
                             {o.fulfillment === "Unfulfilled" && (
                               <Btn
                                 variant="ghost"
-                                onClick={() => patch(o.id, { fulfillment: "Shipped" })}
+                                onClick={() => {
+                                  setCarrier("");
+                                  setTracking("");
+                                  setShipOrder(o);
+                                }}
                                 className="!px-3 !py-1.5"
                               >
                                 Mark shipped
@@ -190,6 +200,12 @@ export function Orders(_props: ViewProps) {
                                   <span>{eur(o.totalEur)}</span>
                                 </div>
                                 <div className="pt-1 text-[11.5px] text-mute">Ships to {o.country}</div>
+                                {o.trackingNumber && (
+                                  <div className="text-[11.5px] text-mute">
+                                    Tracking: {o.trackingCarrier ? o.trackingCarrier + " · " : ""}
+                                    {o.trackingNumber}
+                                  </div>
+                                )}
                                 <div className="pt-3">
                                   <Btn variant="ghost" onClick={() => setSlipOrder(o)} className="w-full">
                                     Print packing slip
@@ -210,6 +226,58 @@ export function Orders(_props: ViewProps) {
       )}
 
       {slipOrder && <PackingSlip order={slipOrder} onClose={() => setSlipOrder(null)} />}
+
+      {shipOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4" onClick={() => setShipOrder(null)}>
+          <Card className="w-full max-w-md p-6" >
+            <div onClick={(e) => e.stopPropagation()}>
+              <div className="font-serif text-[20px] font-medium text-ink">Mark #{shipOrder.number} as shipped</div>
+              <p className="mt-1 text-[12.5px] text-mute">Optionally record a carrier and tracking number — the customer sees these on the order tracking page and in the shipped email.</p>
+              <div className="mt-4 space-y-3">
+                <select
+                  value={carrier}
+                  onChange={(e) => setCarrier(e.target.value)}
+                  className="w-full rounded-lg border border-ink/15 bg-paper px-3 py-2.5 text-[13.5px] text-ink focus:border-gold focus:outline-none"
+                >
+                  <option value="">Carrier (optional)</option>
+                  <option value="ELTA Courier">ELTA Courier</option>
+                  <option value="ACS Courier">ACS Courier</option>
+                  <option value="Speedex">Speedex</option>
+                  <option value="Geniki Taxydromiki">Geniki Taxydromiki</option>
+                  <option value="DHL">DHL</option>
+                  <option value="UPS">UPS</option>
+                  <option value="FedEx">FedEx</option>
+                  <option value="Other">Other</option>
+                </select>
+                <input
+                  value={tracking}
+                  onChange={(e) => setTracking(e.target.value)}
+                  placeholder="Tracking number (optional)"
+                  className="w-full rounded-lg border border-ink/15 bg-paper px-3 py-2.5 text-[13.5px] text-ink placeholder:text-mute focus:border-gold focus:outline-none"
+                />
+              </div>
+              <div className="mt-5 flex justify-end gap-2">
+                <Btn variant="ghost" onClick={() => setShipOrder(null)}>
+                  Cancel
+                </Btn>
+                <Btn
+                  variant="primary"
+                  onClick={() => {
+                    patch(shipOrder.id, {
+                      fulfillment: "Shipped",
+                      trackingCarrier: carrier || null,
+                      trackingNumber: tracking.trim() || null,
+                    });
+                    setShipOrder(null);
+                  }}
+                >
+                  Mark as shipped
+                </Btn>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

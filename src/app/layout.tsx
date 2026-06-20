@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { JsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const DESCRIPTION =
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
       </head>
       <body className="font-sans">{children}</body>
     </html>

@@ -5,7 +5,8 @@ import { eur } from "@/lib/money";
 import { Icon } from "@/components/admin/icons";
 import type { ClientOrder } from "@/lib/order-serialize";
 import type { AdminMessage, AdminSubscriber } from "@/lib/admin-data";
-import { Card, Chip, PageHeader, Spinner, fmtDate, paymentTone, fulfillmentTone, type ViewProps } from "./_shared";
+import type { StoreProduct } from "@/lib/types";
+import { Btn, Card, Chip, PageHeader, Spinner, fmtDate, paymentTone, fulfillmentTone, type ViewProps } from "./_shared";
 
 interface Kpi {
   label: string;
@@ -17,6 +18,7 @@ export function Dashboard({ go }: ViewProps) {
   const [orders, setOrders] = useState<ClientOrder[]>([]);
   const [subscribers, setSubscribers] = useState<AdminSubscriber[]>([]);
   const [messages, setMessages] = useState<AdminMessage[]>([]);
+  const [products, setProducts] = useState<StoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,12 +27,14 @@ export function Dashboard({ go }: ViewProps) {
       fetch("/api/admin/orders").then((r) => r.json()),
       fetch("/api/admin/subscribers").then((r) => r.json()),
       fetch("/api/admin/messages").then((r) => r.json()),
+      fetch("/api/admin/products").then((r) => r.json()),
     ])
-      .then(([o, s, m]) => {
+      .then(([o, s, m, p]) => {
         if (!alive) return;
         setOrders(o.orders || []);
         setSubscribers(s.subscribers || []);
         setMessages(m.messages || []);
+        setProducts(p.products || []);
       })
       .finally(() => alive && setLoading(false));
     return () => {
@@ -43,6 +47,9 @@ export function Dashboard({ go }: ViewProps) {
   const revenue = orders.filter((o) => o.payment === "Paid").reduce((sum, o) => sum + o.totalEur, 0);
   const unread = messages.filter((m) => !m.read).length;
   const recent = orders.slice(0, 5);
+
+  const low = products.filter((p) => p.stock > 0 && p.stock <= 5);
+  const out = products.filter((p) => p.stock === 0);
 
   const kpis: Kpi[] = [
     { label: "Revenue", value: eur(revenue), icon: Icon.chart },
@@ -71,6 +78,27 @@ export function Dashboard({ go }: ViewProps) {
           );
         })}
       </div>
+
+      {low.length + out.length > 0 && (
+        <Card className="mt-6 border-gold/30 bg-gold/[0.06] p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold/15 text-gold">
+                <Icon.box size={18} />
+              </span>
+              <div>
+                <div className="text-[13.5px] font-semibold text-ink">Inventory needs attention</div>
+                <div className="mt-0.5 text-[12.5px] text-mute">
+                  {out.length} out of stock · {low.length} low on stock
+                </div>
+              </div>
+            </div>
+            <Btn variant="ghost" onClick={() => go("inventory")}>
+              Review inventory
+            </Btn>
+          </div>
+        </Card>
+      )}
 
       <div className="mt-7">
         <div className="mb-3 flex items-center justify-between">

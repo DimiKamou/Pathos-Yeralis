@@ -5,6 +5,15 @@ import { eur } from "@/lib/money";
 import { ArtBox } from "./product-art";
 import type { ClientOrder } from "@/lib/order-serialize";
 
+const CARRIER_URL: Record<string, (n: string) => string> = {
+  "ELTA Courier": (n) => `https://www.elta-courier.gr/track?number=${encodeURIComponent(n)}`,
+  "ACS Courier": (n) => `https://www.acscourier.net/en/track-and-trace/?trackingNumber=${encodeURIComponent(n)}`,
+  "Speedex": (n) => `http://www.speedex.gr/speedex/NewTrackAndTrace.aspx?number=${encodeURIComponent(n)}`,
+  "DHL": (n) => `https://www.dhl.com/en/express/tracking.html?AWB=${encodeURIComponent(n)}`,
+  "UPS": (n) => `https://www.ups.com/track?tracknum=${encodeURIComponent(n)}`,
+  "FedEx": (n) => `https://www.fedex.com/fedextrack/?trackingnumber=${encodeURIComponent(n)}`,
+};
+
 const chip = (label: string, tone: "green" | "gold" | "grey") =>
   `inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide ${
     tone === "green" ? "bg-emerald-500/12 text-emerald-700" : tone === "gold" ? "bg-gold/15 text-gold" : "bg-ink/8 text-mute"
@@ -89,6 +98,24 @@ export function TrackOrder() {
             <span>Total</span>
             <span>{eur(order.totalEur)}</span>
           </div>
+          {(order.fulfillment === "Shipped" || order.fulfillment === "Delivered") && order.trackingNumber && (
+            <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.08] px-3 py-2.5 text-[12.5px] text-ink">
+              <span className="font-light">
+                {order.trackingCarrier ? `${order.trackingCarrier} · ` : ""}
+                <span className="font-medium">{order.trackingNumber}</span>
+              </span>
+              {order.trackingCarrier && CARRIER_URL[order.trackingCarrier] && (
+                <a
+                  href={CARRIER_URL[order.trackingCarrier](order.trackingNumber)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 font-medium text-gold hover:underline"
+                >
+                  Track parcel ↗
+                </a>
+              )}
+            </div>
+          )}
           {order.payment === "Awaiting payment" && (
             <p className="mt-4 rounded-lg bg-gold/12 px-3 py-2.5 text-[12px] font-light text-ink">
               We’re waiting on your bank transfer. Use <span className="font-medium">#{order.number}</span> as the payment reference; we ship as soon as it clears.

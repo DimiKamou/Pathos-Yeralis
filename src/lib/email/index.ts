@@ -46,12 +46,23 @@ export async function sendOrderEmail(order: OrderForEmail): Promise<void> {
   }
 }
 
-export async function sendShippedEmail(o: { number: string; customer: string; email: string }): Promise<void> {
+export async function sendShippedEmail(o: {
+  number: string;
+  customer: string;
+  email: string;
+  trackingCarrier?: string | null;
+  trackingNumber?: string | null;
+}): Promise<void> {
   try {
     await getEmailProvider().send({
       to: o.email,
       subject: `Your PATHOS order #${o.number} has shipped`,
-      html: shippedHtml(o),
+      html: shippedHtml({
+        number: o.number,
+        customer: o.customer,
+        trackingCarrier: o.trackingCarrier,
+        trackingNumber: o.trackingNumber,
+      }),
     });
   } catch (err) {
     console.error("[email] shipped email failed:", err);

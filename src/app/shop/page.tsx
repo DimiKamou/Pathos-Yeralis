@@ -6,6 +6,9 @@ import { BANK } from "@/lib/bank";
 import { effectiveSeason, SEASONS } from "@/lib/seasons";
 import { StoreShell } from "@/components/storefront/StoreShell";
 import { CollectionView } from "@/components/storefront/CollectionView";
+import { JsonLd, itemListJsonLd, breadcrumbJsonLd } from "@/lib/seo";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Jewelry & Accessories · PATHOS by Yeralis" };
@@ -22,6 +25,15 @@ export default async function ShopPage() {
 
   return (
     <div style={styleVars}>
+      <JsonLd
+        data={[
+          itemListJsonLd(active, `${SITE_URL}/shop`),
+          breadcrumbJsonLd([
+            { name: "Home", url: SITE_URL },
+            { name: "Jewelry & Accessories", url: SITE_URL + "/shop" },
+          ]),
+        ]}
+      />
       <StoreShell products={products} settings={settings} bank={BANK}>
         <CollectionView
           top

@@ -8,6 +8,8 @@ import { sendShippedEmail } from "@/lib/email";
 const schema = z.object({
   payment: z.enum(["Paid", "Awaiting payment", "Refunded"]).optional(),
   fulfillment: z.enum(["Unfulfilled", "Shipped", "Delivered"]).optional(),
+  trackingCarrier: z.string().max(60).nullable().optional(),
+  trackingNumber: z.string().max(120).nullable().optional(),
 });
 
 // Update order status. Marking Refunded restocks the items (+ refunds via
@@ -55,7 +57,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const order = await prisma.order.update({ where: { id }, data, include: { lines: true } });
 
   if (becomingShipped) {
-    await sendShippedEmail({ number: order.number, customer: order.customer, email: order.email });
+    await sendShippedEmail({
+      number: order.number,
+      customer: order.customer,
+      email: order.email,
+      trackingCarrier: order.trackingCarrier,
+      trackingNumber: order.trackingNumber,
+    });
   }
 
   return NextResponse.json({ ok: true, order: serializeOrderForClient(order) });
