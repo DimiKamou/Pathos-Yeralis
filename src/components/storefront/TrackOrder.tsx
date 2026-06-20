@@ -9,8 +9,9 @@ const chip = (label: string, tone: "green" | "gold" | "grey") =>
   `inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide ${
     tone === "green" ? "bg-emerald-500/12 text-emerald-700" : tone === "gold" ? "bg-gold/15 text-gold" : "bg-ink/8 text-mute"
   }`;
-const payTone = (p: string) => (p === "Paid" ? "green" : p === "Awaiting payment" ? "gold" : "grey") as const;
-const fulTone = (f: string) => (f === "Shipped" || f === "Delivered" ? "green" : "grey") as const;
+const payTone = (p: string): "green" | "gold" | "grey" =>
+  p === "Paid" ? "green" : p === "Awaiting payment" ? "gold" : "grey";
+const fulTone = (f: string): "green" | "grey" => (f === "Shipped" || f === "Delivered" ? "green" : "grey");
 
 export function TrackOrder() {
   const [number, setNumber] = useState("");
