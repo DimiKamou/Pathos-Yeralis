@@ -24,6 +24,9 @@ export interface ClientOrder {
   discountEur: number;
   discountCode: string | null;
   totalEur: number;
+  shipAddress: string | null;
+  shipCity: string | null;
+  shipZip: string | null;
   createdAt: string;
   lines: ClientOrderLine[];
 }
@@ -44,6 +47,9 @@ export function serializeOrderForClient(order: Order & { lines?: OrderLine[] }):
     discountEur: (order.discountCents ?? 0) / 100,
     discountCode: order.discountCode,
     totalEur: order.totalCents / 100,
+    shipAddress: order.shipAddress,
+    shipCity: order.shipCity,
+    shipZip: order.shipZip,
     createdAt: order.createdAt.toISOString(),
     lines: (order.lines ?? []).map((l) => ({
       name: l.name,
