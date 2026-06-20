@@ -2,6 +2,7 @@
 
 // A single collection's filtered product grid. Lives inside StoreShell, so the
 // PDP modal, cart and checkout all work from here.
+import { useState } from "react";
 import { ProductCard, Promo } from "./Sections";
 import type { StoreProduct } from "@/lib/types";
 
@@ -18,6 +19,11 @@ export function CollectionView({
   top?: boolean;
   eyebrow?: string;
 }) {
+  const [sort, setSort] = useState("featured");
+  const shown = [...products];
+  if (sort === "price-asc") shown.sort((a, b) => a.price - b.price);
+  else if (sort === "price-desc") shown.sort((a, b) => b.price - a.price);
+  else if (sort === "name") shown.sort((a, b) => a.name.localeCompare(b.name));
   return (
     <main className="mx-auto w-full max-w-[1240px] px-8 pb-8 pt-14">
       <nav className="mb-8 text-center text-[11px] font-light tracking-[0.06em] text-mute">
@@ -48,11 +54,24 @@ export function CollectionView({
           </a>
         </div>
       ) : (
-        <div className="grid grid-cols-2 justify-items-center gap-x-6 gap-y-12 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((p) => (
-            <ProductCard key={p.id} p={p} />
-          ))}
-        </div>
+        <>
+          {products.length > 1 && (
+            <div className="mb-6 flex items-center justify-end gap-2 text-[12px]">
+              <span className="text-mute">Sort</span>
+              <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-lg border border-ink/15 bg-paper px-3 py-1.5 text-[12.5px] text-ink focus:border-gold focus:outline-none">
+                <option value="featured">Featured</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+                <option value="name">Name A–Z</option>
+              </select>
+            </div>
+          )}
+          <div className="grid grid-cols-2 justify-items-center gap-x-6 gap-y-12 md:grid-cols-3 lg:grid-cols-4">
+            {shown.map((p) => (
+              <ProductCard key={p.id} p={p} />
+            ))}
+          </div>
+        </>
       )}
 
       <Promo />

@@ -53,6 +53,14 @@ export function CartDrawer() {
               ))}
             </div>
             <div className="border-t border-ink/10 px-6 py-5">
+              {freeShipCode || subtotal >= 100 ? (
+                <div className="mb-4 rounded-lg bg-gold/12 px-3 py-2 text-center text-[12px] font-medium text-gold">✓ You’ve unlocked free shipping</div>
+              ) : (
+                <div className="mb-4">
+                  <div className="mb-1.5 text-center text-[12px] text-mute">You’re <span className="font-medium text-ink">{eur(100 - subtotal)}</span> away from free shipping</div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10"><div className="h-full rounded-full bg-gold transition-all" style={{ width: `${Math.min(100, (subtotal / 100) * 100)}%` }} /></div>
+                </div>
+              )}
               <div className="mb-4"><DiscountField /></div>
               <div className="flex justify-between text-[13px] text-mute"><span>Subtotal</span><span className="text-ink">{eur(subtotal)}</span></div>
               {discount && discountAmount > 0 && <div className="mt-1 flex justify-between text-[13px] text-gold"><span>Discount ({discount.code})</span><span>−{eur(discountAmount)}</span></div>}
