@@ -512,10 +512,10 @@ function Hero() {
 }
 
 /* ───────────────────────── Shop by Collection ───────────────────────── */
-function CollectionCard({ tone, eyebrow, label, motif }) {
+function CollectionCard({ tone, eyebrow, label, motif, href }) {
   const dark = tone === 'dark';
   return (
-    <a href="#" className={`group relative block aspect-[5/4] overflow-hidden ${dark ? 'bg-[#2b2620]' : 'bg-sand'}`}>
+    <a href={href || ('#/collections/' + slugify(eyebrow))} className={`group relative block aspect-[5/4] overflow-hidden ${dark ? 'bg-[#2b2620]' : 'bg-sand'}`}>
       {/* faint product motif */}
       <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${dark ? 'opacity-25' : 'opacity-40'}`}>
         {motif}
@@ -1316,7 +1316,184 @@ function Checkout() {
 }
 function CheckBig() { return <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>; }
 
+/* ───────────────────────── Routed pages (Collections · Shop · About) ───────────────────────── */
+
+/* Breadcrumb shown above each inner page. crumbs: [{label, href?}, …] (last item is current). */
+function Breadcrumb({ crumbs }) {
+  return (
+    <nav className="mb-6 flex flex-wrap items-center gap-2 text-[11px] tracking-[0.12em] text-mute">
+      {crumbs.map((c, i) => (
+        <span key={i} className="flex items-center gap-2">
+          {i > 0 && <span className="text-mute/50">/</span>}
+          {c.href ? <a href={c.href} className="uppercase transition-colors hover:text-ink">{c.label}</a>
+                  : <span className="uppercase text-ink/70">{c.label}</span>}
+        </span>
+      ))}
+    </nav>
+  );
+}
+
+/* A responsive product grid that reuses the carousel's ProductCard (fixed 200px) centered per cell. */
+function ProductGrid({ products }) {
+  if (!products.length) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-ink/10 bg-paper/60 px-6 py-20 text-center">
+        <div className="mb-3 text-mute">{Art.shell}</div>
+        <div className="font-serif text-[20px] text-ink">Nothing here yet</div>
+        <p className="mt-2 text-[13px] font-light text-mute">New pieces for this collection are on the way.</p>
+        <a href="#/shop" className="mt-5 rounded-full bg-ink px-6 py-2.5 text-[12px] font-medium uppercase tracking-[0.16em] text-paper hover:bg-ink/90">Browse all pieces</a>
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-2 justify-items-center gap-x-6 gap-y-12 sm:grid-cols-3 lg:grid-cols-4">
+      {products.map((p) => <ProductCard key={p.id} p={p} />)}
+    </div>
+  );
+}
+
+/* #/collections — index of every collection as a card, reusing the landing CollectionCard look. */
+function CollectionsIndex() {
+  const beadsMotif = (
+    <svg viewBox="0 0 320 240" className="h-3/5 w-auto" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round">
+      <path d="M30 96 Q160 168 290 96" opacity="0.5" />
+      {Array.from({ length: 13 }).map((_, i) => {
+        const t = i / 12; const x = 30 + t * 260; const y = 96 + Math.sin(Math.PI * t) * 70;
+        return <circle key={i} cx={x} cy={y} r={i % 2 ? 11 : 8} />;
+      })}
+    </svg>
+  );
+  return (
+    <section className="mx-auto w-full max-w-[1240px] px-8 pb-4 pt-12">
+      <Breadcrumb crumbs={[{ label: 'Home', href: '#/' }, { label: 'Collections' }]} />
+      <header className="mb-12 text-center">
+        <h2 className="font-serif text-[40px] font-medium leading-tight tracking-[0.02em] text-ink">Collections</h2>
+        <p className="mx-auto mt-3 max-w-xl text-[13.5px] font-light leading-relaxed tracking-wide text-mute">
+          Soulful, handmade jewelry inspired by the Aegean &mdash; explore each edit of gemstones, shells &amp; minerals.
+        </p>
+      </header>
+      <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
+        {COLLECTIONS.map((name, i) => {
+          const slug = slugify(name);
+          const n = productsInCollection(slug).length;
+          return (
+            <CollectionCard
+              key={slug}
+              tone={i % 2 === 1 ? 'dark' : 'light'}
+              eyebrow={name}
+              label={n + (n === 1 ? ' piece' : ' pieces')}
+              motif={beadsMotif}
+              href={'#/collections/' + slug}
+            />
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* #/collections/<slug> — filtered product grid. new-in shows all active products. */
+function CollectionPage({ slug }) {
+  const name = collectionNameForSlug(slug);
+  const products = productsInCollection(slug);
+  return (
+    <section className="mx-auto w-full max-w-[1240px] px-8 pb-4 pt-12">
+      <Breadcrumb crumbs={[{ label: 'Home', href: '#/' }, { label: 'Collections', href: '#/collections' }, { label: name || slug }]} />
+      <header className="mb-12 text-center">
+        <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">Collection</div>
+        <h2 className="mt-2 font-serif text-[40px] font-medium leading-tight tracking-[0.02em] text-ink">{name || 'Collection'}</h2>
+        {!name ? (
+          <p className="mx-auto mt-3 max-w-md text-[13.5px] font-light leading-relaxed text-mute">We couldn&rsquo;t find that collection. <a href="#/collections" className="text-gold hover:text-ink">Browse all collections →</a></p>
+        ) : (
+          <p className="mx-auto mt-3 max-w-md text-[13.5px] font-light leading-relaxed text-mute">{products.length}{products.length === 1 ? ' handmade piece' : ' handmade pieces'} in the {name} edit.</p>
+        )}
+      </header>
+      <ProductGrid products={products} />
+    </section>
+  );
+}
+
+/* #/shop — "Jewelry & Accessories": every active product. */
+function ShopPage() {
+  return (
+    <section className="mx-auto w-full max-w-[1240px] px-8 pb-4 pt-12">
+      <Breadcrumb crumbs={[{ label: 'Home', href: '#/' }, { label: 'Jewelry & Accessories' }]} />
+      <header className="mb-12 text-center">
+        <h2 className="font-serif text-[40px] font-medium leading-tight tracking-[0.02em] text-ink">Jewelry &amp; Accessories</h2>
+        <p className="mx-auto mt-3 max-w-xl text-[13.5px] font-light leading-relaxed tracking-wide text-mute">
+          Every handmade piece from the atelier &mdash; gemstones, shells, minerals and more, all in one place.
+        </p>
+      </header>
+      <ProductGrid products={ACTIVE} />
+    </section>
+  );
+}
+
+/* #/about — on-brand About page; reuses the Visit-the-Atelier section below. */
+function AboutPage() {
+  return (
+    <section className="mx-auto w-full max-w-[820px] px-8 pb-4 pt-12">
+      <Breadcrumb crumbs={[{ label: 'Home', href: '#/' }, { label: 'About' }]} />
+      <header className="text-center">
+        <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">Our Story</div>
+        <h1 className="mx-auto mt-3 max-w-xl font-serif text-[44px] font-medium leading-[1.1] tracking-[0.01em] text-ink">Shaped by hand, by the Aegean</h1>
+        <div className="mx-auto mt-6 flex items-center justify-center gap-3 text-gold/70">
+          <span className="h-px w-10 bg-gold/40"></span><span className="text-[8px] leading-none">◆</span><span className="h-px w-10 bg-gold/40"></span>
+        </div>
+      </header>
+      <div className="mx-auto mt-10 max-w-[62ch] space-y-6 text-[15px] font-light leading-[1.85] text-ink/80">
+        <p>
+          PATHOS began in a small atelier in the heart of Pláka, in the shadow of the Acropolis. Every piece is made by
+          hand by Yeralis &mdash; strung, set and finished one at a time &mdash; so no two are ever quite alike. We work in
+          slow, deliberate batches rather than mass production, because a piece you keep for a lifetime deserves the time
+          it takes to make it well.
+        </p>
+        <p>
+          Our materials are drawn from the natural beauty of the earth and the sea: faceted hematite, soft blue
+          chalcedony and milky moonstone; Mediterranean coral and spiral shells gathered from the shore; matte volcanic
+          lava and iridescent paua. These sit alongside sterling silver, 14K gold and a warm 24K gold plate &mdash; honest
+          materials, finished to last.
+        </p>
+        <p>
+          The result is jewelry that feels personal and grounding: weighty everyday talismans, pieces that carry a little
+          of the Aegean light with them wherever you go. We&rsquo;d love for you to come and try them on &mdash; the door to
+          the atelier is always open.
+        </p>
+      </div>
+      <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-mute">
+        <span className="scale-90">{Art.shell}</span>
+        <span className="scale-90">{Art.necklace}</span>
+        <span className="scale-90">{Art.ring}</span>
+      </div>
+    </section>
+  );
+}
+
 /* ───────────────────────── App ───────────────────────── */
+function Home() {
+  return (
+    <>
+      <Hero />
+      <ShopByCollection />
+      <Carousel />
+      <VisitUs />
+      <Promo />
+    </>
+  );
+}
+
+function RoutedMain() {
+  const route = useHashRoute();
+  switch (route.name) {
+    case 'collections': return <main><CollectionsIndex /><Promo /></main>;
+    case 'collection':  return <main><CollectionPage slug={route.slug} /><Promo /></main>;
+    case 'shop':        return <main><ShopPage /><Promo /></main>;
+    case 'about':       return <main><AboutPage /><VisitUs /><Promo /></main>;
+    case 'home':
+    default:            return <main><Home /></main>;
+  }
+}
+
 function App() {
   return (
     <ShopProvider>
@@ -1326,13 +1503,7 @@ function App() {
           <TopBar />
           <Nav />
         </header>
-        <main>
-          <Hero />
-          <ShopByCollection />
-          <Carousel />
-          <VisitUs />
-          <Promo />
-        </main>
+        <RoutedMain />
         <SiteFooter />
         <ChatWidget />
         <EntryPopup />
