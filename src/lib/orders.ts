@@ -188,6 +188,7 @@ export async function createOrder(params: {
         ...priced.lines.map((l) =>
           prisma.product.updateMany({ where: { id: l.productId, stock: { gte: l.qty } }, data: { stock: { decrement: l.qty } } }),
         ),
+        ...(priced.discount ? [prisma.discount.updateMany({ where: { code: priced.discount.code }, data: { uses: { increment: 1 } } })] : []),
       ]);
       return order;
     } catch (e) {

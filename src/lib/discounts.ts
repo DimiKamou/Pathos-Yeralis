@@ -33,6 +33,8 @@ export async function checkDiscount(raw: string | null | undefined): Promise<Dis
   // 2) Codes from the Discount table.
   const row = await prisma.discount.findUnique({ where: { code } });
   if (row && row.active) {
+    if (row.expiresAt && row.expiresAt.getTime() < Date.now()) return null;
+    if (row.maxUses != null && row.uses >= row.maxUses) return null;
     return { code, pct: row.pct, label: row.label, freeShip: row.freeShip || undefined };
   }
   return null;

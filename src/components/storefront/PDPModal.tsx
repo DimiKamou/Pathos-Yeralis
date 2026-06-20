@@ -10,6 +10,7 @@ import { Art } from "@/components/storefront/art";
 import { ArtBox, ProductMedia } from "@/components/storefront/product-art";
 import { useShop, variantsFor } from "@/components/storefront/shop-context";
 import { NotifyForm } from "@/components/storefront/NotifyForm";
+import { RecentlyViewed } from "@/components/storefront/RecentlyViewed";
 
 interface PublicReview {
   id: string;
@@ -187,7 +188,7 @@ function Swatches({ colors }: { colors: string[] }) {
 }
 
 export function PDPModal() {
-  const { products, pdp, setPdp, add, setCartOpen, toggleWish, inWish } = useShop();
+  const { products, pdp, setPdp, add, setCartOpen, toggleWish, inWish, recordView } = useShop();
   const [variant, setVariant] = useState("");
   const [qty, setQty] = useState(1);
   const [imgIdx, setImgIdx] = useState(0);
@@ -199,6 +200,13 @@ export function PDPModal() {
       setImgIdx(0);
     }
   }, [pdp]);
+  // Record the opened product as recently viewed. Key on the id only so
+  // switching products re-records; recordView mutates `recent`, which must
+  // NOT be a dependency here (would loop).
+  useEffect(() => {
+    if (pdp) recordView(pdp.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pdp?.id]);
   if (!pdp) return null;
   const v = variantsFor(pdp.art);
   const sold = pdp.stock === 0;
@@ -280,6 +288,7 @@ export function PDPModal() {
               </div>
             </div>
           )}
+          <RecentlyViewed excludeId={pdp?.id} />
           <ReviewsSection productId={pdp.id} />
         </div>
       </div>

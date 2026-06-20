@@ -136,11 +136,14 @@ model Campaign {
 // Discount codes (was the static DISCOUNTS map). checkDiscount() also honors
 // the live welcome-popup code, read from Setting("popup").
 model Discount {
-  code     String  @id // stored uppercase, e.g. "WELCOME10"
-  pct      Float   @default(0) // 0.10 = 10% off
-  label    String
-  freeShip Boolean @default(false)
-  active   Boolean @default(true)
+  code      String   @id // stored uppercase, e.g. "WELCOME10"
+  pct       Float    @default(0) // 0.10 = 10% off
+  label     String
+  freeShip  Boolean  @default(false)
+  active    Boolean  @default(true)
+  uses      Int      @default(0)
+  maxUses   Int?
+  expiresAt DateTime?
 }
 
 // Admin-editable storefront settings (was the localStorage bridge keys:

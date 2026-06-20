@@ -13,6 +13,8 @@ const schema = z.object({
   label: z.string().min(1),
   freeShip: z.boolean().default(false),
   active: z.boolean().default(true),
+  maxUses: z.number().int().positive().nullable().optional(),
+  expiresAt: z.string().datetime().nullable().optional(),
 });
 
 export async function POST(req: Request) {
@@ -25,8 +27,8 @@ export async function POST(req: Request) {
   const code = data.code.trim().toUpperCase();
   const discount = await prisma.discount.upsert({
     where: { code },
-    update: { pct: data.pct, label: data.label, freeShip: data.freeShip, active: data.active },
-    create: { code, pct: data.pct, label: data.label, freeShip: data.freeShip, active: data.active },
+    update: { pct: data.pct, label: data.label, freeShip: data.freeShip, active: data.active, maxUses: data.maxUses ?? null, expiresAt: data.expiresAt ? new Date(data.expiresAt) : null },
+    create: { code, pct: data.pct, label: data.label, freeShip: data.freeShip, active: data.active, maxUses: data.maxUses ?? null, expiresAt: data.expiresAt ? new Date(data.expiresAt) : null },
   });
   return NextResponse.json({ ok: true, discount });
 }

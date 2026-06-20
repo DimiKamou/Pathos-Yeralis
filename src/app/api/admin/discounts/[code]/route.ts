@@ -7,6 +7,8 @@ const schema = z.object({
   label: z.string().optional(),
   freeShip: z.boolean().optional(),
   active: z.boolean().optional(),
+  maxUses: z.number().int().positive().nullable().optional(),
+  expiresAt: z.string().datetime().nullable().optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ code: string }> }) {
@@ -17,7 +19,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ code: 
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid input" }, { status: 400 });
   }
-  const discount = await prisma.discount.update({ where: { code: code.toUpperCase() }, data });
+  const updateData = {
+    ...data,
+    expiresAt: data.expiresAt ? new Date(data.expiresAt) : data.expiresAt === null ? null : undefined,
+  };
+  const discount = await prisma.discount.update({ where: { code: code.toUpperCase() }, data: updateData });
   return NextResponse.json({ ok: true, discount });
 }
 

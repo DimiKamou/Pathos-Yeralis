@@ -9,7 +9,7 @@ export function Discounts(_props: ViewProps) {
   const [discounts, setDiscounts] = useState<AdminDiscount[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ code: "", label: "", pct: 10, freeShip: false, active: true });
+  const [form, setForm] = useState({ code: "", label: "", pct: 10, freeShip: false, active: true, maxUses: "", expiresAt: "" });
 
   const load = () =>
     fetch("/api/admin/discounts")
@@ -21,10 +21,10 @@ export function Discounts(_props: ViewProps) {
   }, []);
 
   async function save() {
-    const body = { code: form.code.trim().toUpperCase(), label: form.label || `${form.pct}% off`, pct: form.pct / 100, freeShip: form.freeShip, active: form.active };
+    const body = { code: form.code.trim().toUpperCase(), label: form.label || `${form.pct}% off`, pct: form.pct / 100, freeShip: form.freeShip, active: form.active, maxUses: form.maxUses ? Number(form.maxUses) : null, expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null };
     await fetch("/api/admin/discounts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => {});
     setAdding(false);
-    setForm({ code: "", label: "", pct: 10, freeShip: false, active: true });
+    setForm({ code: "", label: "", pct: 10, freeShip: false, active: true, maxUses: "", expiresAt: "" });
     load();
   }
   async function toggleActive(d: AdminDiscount) {
@@ -52,20 +52,30 @@ export function Discounts(_props: ViewProps) {
               <th className="px-5 py-3 font-semibold">Code</th>
               <th className="px-5 py-3 font-semibold">Label</th>
               <th className="px-5 py-3 font-semibold">Discount</th>
+              <th className="px-5 py-3 font-semibold">Used</th>
               <th className="px-5 py-3 font-semibold">Status</th>
               <th className="px-5 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {discounts.map((d) => (
+            {discounts.map((d) => {
+              const expired = !!d.expiresAt && new Date(d.expiresAt).getTime() < Date.now();
+              return (
               <tr key={d.code} className="border-b border-ink/[0.06] last:border-0 hover:bg-ink/[0.02]">
-                <td className="px-5 py-3"><span className="rounded bg-gold/15 px-2 py-0.5 font-mono text-[12px] text-gold">{d.code}</span></td>
+                <td className="px-5 py-3">
+                  <span className="rounded bg-gold/15 px-2 py-0.5 font-mono text-[12px] text-gold">{d.code}</span>
+                  {d.expiresAt && <div className="mt-1 text-[11px] text-mute">Expires {new Date(d.expiresAt).toLocaleDateString()}</div>}
+                </td>
                 <td className="px-5 py-3 text-ink">{d.label}</td>
                 <td className="px-5 py-3 text-mute">{d.freeShip ? "Free shipping" : `${Math.round(d.pct * 100)}% off`}</td>
+                <td className="px-5 py-3 text-mute">{d.uses}{d.maxUses != null ? ` / ${d.maxUses}` : ""}</td>
                 <td className="px-5 py-3">
-                  <button onClick={() => toggleActive(d)}>
-                    <Chip tone={d.active ? "green" : "grey"}>{d.active ? "Active" : "Paused"}</Chip>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => toggleActive(d)}>
+                      <Chip tone={d.active ? "green" : "grey"}>{d.active ? "Active" : "Paused"}</Chip>
+                    </button>
+                    {expired && <Chip tone="grey">Expired</Chip>}
+                  </div>
                 </td>
                 <td className="px-5 py-3">
                   <div className="flex justify-end">
@@ -73,7 +83,8 @@ export function Discounts(_props: ViewProps) {
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </Card>
@@ -85,6 +96,12 @@ export function Discounts(_props: ViewProps) {
             <Field label="Label"><TextInput value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} placeholder="15% off" /></Field>
             <Field label="Percentage off">
               <TextInput type="number" min={0} max={100} value={form.pct} onChange={(e) => setForm({ ...form, pct: Number(e.target.value) })} />
+            </Field>
+            <Field label="Max uses (blank = unlimited)">
+              <TextInput type="number" min={1} value={form.maxUses} onChange={(e) => setForm({ ...form, maxUses: e.target.value })} />
+            </Field>
+            <Field label="Expiry date (blank = never)">
+              <TextInput type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} />
             </Field>
             <Toggle checked={form.freeShip} onChange={(v) => setForm({ ...form, freeShip: v })} label="Free shipping code" />
             <Toggle checked={form.active} onChange={(v) => setForm({ ...form, active: v })} label="Active" />

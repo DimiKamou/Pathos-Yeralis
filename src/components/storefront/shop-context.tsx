@@ -25,6 +25,8 @@ interface ShopContextValue {
   subtotal: number;
   pdp: StoreProduct | null;
   setPdp: (p: StoreProduct | null) => void;
+  recent: string[];
+  recordView: (id: string) => void;
   cartOpen: boolean;
   setCartOpen: (v: boolean) => void;
   checkout: boolean;
@@ -67,6 +69,7 @@ export function ShopProvider({
 }) {
   const [items, setItems] = useState<CartLine[]>([]);
   const [wish, setWish] = useState<string[]>([]);
+  const [recent, setRecent] = useState<string[]>([]);
   const [pdp, setPdp] = useState<StoreProduct | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkout, setCheckout] = useState(false);
@@ -87,6 +90,11 @@ export function ShopProvider({
     } catch {
       /* ignore */
     }
+    try {
+      setRecent(JSON.parse(localStorage.getItem("pathos.recent") || "[]"));
+    } catch {
+      /* ignore */
+    }
     setHydrated(true);
   }, []);
   useEffect(() => {
@@ -95,8 +103,14 @@ export function ShopProvider({
   useEffect(() => {
     if (hydrated) try { localStorage.setItem("pathos.wishlist", JSON.stringify(wish)); } catch { /* ignore */ }
   }, [wish, hydrated]);
+  useEffect(() => {
+    if (hydrated) try { localStorage.setItem("pathos.recent", JSON.stringify(recent)); } catch { /* ignore */ }
+  }, [recent, hydrated]);
 
   const productById = (id: string) => products.find((p) => p.id === id);
+
+  const recordView = (id: string) =>
+    setRecent((prev) => [id, ...prev.filter((x) => x !== id)].slice(0, 8));
 
   // Reconcile the persisted cart/wishlist against the live catalog: drop items
   // whose product was removed, set to Draft, or sold out; refresh name/price;
@@ -113,6 +127,7 @@ export function ShopProvider({
       return next;
     });
     setWish((prev) => prev.filter((id) => products.some((p) => p.id === id)));
+    setRecent((prev) => prev.filter((id) => products.some((p) => p.id === id)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, products]);
 
@@ -187,6 +202,8 @@ export function ShopProvider({
         subtotal,
         pdp,
         setPdp,
+        recent,
+        recordView,
         cartOpen,
         setCartOpen,
         checkout,

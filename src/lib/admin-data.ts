@@ -35,6 +35,9 @@ export interface AdminDiscount {
   label: string;
   freeShip: boolean;
   active: boolean;
+  uses: number;
+  maxUses: number | null;
+  expiresAt: string | null;
 }
 export interface AdminReview {
   id: string;
@@ -90,7 +93,7 @@ export async function getCampaigns(): Promise<AdminCampaign[]> {
 
 export async function getDiscounts(): Promise<AdminDiscount[]> {
   const rows = await prisma.discount.findMany({ orderBy: { code: "asc" } });
-  return rows.map((d) => ({ code: d.code, pct: d.pct, label: d.label, freeShip: d.freeShip, active: d.active }));
+  return rows.map((d) => ({ code: d.code, pct: d.pct, label: d.label, freeShip: d.freeShip, active: d.active, uses: d.uses, maxUses: d.maxUses, expiresAt: d.expiresAt ? d.expiresAt.toISOString() : null }));
 }
 
 export async function getReviews(): Promise<AdminReview[]> {
