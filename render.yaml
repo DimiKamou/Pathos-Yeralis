@@ -19,10 +19,10 @@ services:
     # --include=dev so the Next.js build tooling (typescript/tailwind/prisma) is
     # present even though Render sets NODE_ENV=production.
     buildCommand: npm install --include=dev && npm run build
-    # Runs after build, before traffic switches over, with the disk mounted:
-    # applies schema + seeds once. Safe on every deploy.
-    preDeployCommand: node scripts/init-db.mjs
-    startCommand: npm start
+    # Init runs at startup so the persistent disk is guaranteed mounted: it
+    # applies the schema and seeds ONLY when empty (idempotent on restarts),
+    # then starts the server.
+    startCommand: node scripts/init-db.mjs && npm start
     healthCheckPath: /
     disk:
       name: data
