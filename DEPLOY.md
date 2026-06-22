@@ -1,82 +1,77 @@
 # Deploying PATHOS by Yeralis
 
-**TL;DR (recommended):** Host on **Vercel**, use a **Postgres** database (Neon or
-Vercel Postgres). Free tiers cover an alpha. ~10 minutes start to finish.
+This is set up as a **low-maintenance handoff**: the shop owner only ever uses the
+`/admin` panel (photos, prices, products, orders); you deploy it once and make the
+occasional fix later.
 
-The code already runs and builds green. The only thing that *must* change for a
-real (cloud) deployment is the database — see below.
-
----
-
-## Why not SQLite in the cloud?
-
-SQLite keeps all data in a single local file. Serverless hosts (Vercel, Netlify)
-have **ephemeral, read-only filesystems**, so a SQLite file would either reset on
-every deploy or not work at all. You need a hosted **Postgres** there.
-
-You don't edit any code for this: the Prisma provider **auto-switches from
-`DATABASE_URL`** (`scripts/db-provider.mjs`, wired into `build`/`setup`):
-
-| `DATABASE_URL` looks like | Provider used |
-| --- | --- |
-| `postgres://…` / `postgresql://…` | `postgresql` |
-| `file:./dev.db` (local default) | `sqlite` |
-
-So locally you keep zero-config SQLite; in the cloud you set a Postgres URL and it
-just works.
+**Recommended for that: one always-on host running SQLite — no separate database.**
+The whole store is a single file, backups are trivial, there's one service to keep
+alive, and the cost is predictable. The app is hardened for this (concurrent
+checkout was load-tested). You only need Postgres if you later want serverless
+hosting or real scale — and switching is a one-line env change, not a code change.
 
 ---
 
-## Option A — Vercel + Postgres (recommended)
+## Option A — Render, one-click (recommended)
 
-**1. Get the code on GitHub.** It's on branch `claude/bold-sagan-u3svb6` (PR #1).
-Either merge that PR into `main`, or just point Vercel at the branch in step 3.
+This repo ships a **`render.yaml` blueprint**, so deployment is mostly clicks.
 
-**2. Create a Postgres database.** Easiest options (free tier):
-- **Neon** (neon.tech) → create project → copy the connection string.
-- **Vercel Postgres** (Vercel dashboard → Storage → Create → Postgres) → it sets
-  `DATABASE_URL` for you automatically.
+1. Make sure the code is on GitHub (it is — merge PR #1 to `main`, or deploy the branch).
+2. Render dashboard → **New +** → **Blueprint** → pick this repo.
+3. Render reads `render.yaml` and prompts for a few values:
+   - `ADMIN_EMAIL` — the owner's admin login
+   - `ADMIN_PASSWORD` — a real password (not the demo)
+   - `NEXT_PUBLIC_SITE_URL` — the site's URL (your `…onrender.com` or a custom domain)
+   - (`ADMIN_SESSION_SECRET` is **auto-generated** by Render — nothing to do)
+4. **Create**. The first deploy:
+   - builds the app,
+   - creates the SQLite database on a **persistent 1 GB disk** (`/data/prod.db`),
+   - **seeds** the starter catalogue + settings + admin user automatically.
+5. Open the URL → `/admin` → log in. Hand the owner that URL + their login. Done.
 
-> If your provider shows both a **pooled** and a **direct** URL (Neon/Supabase):
-> use the **direct** URL for the one-time DB setup in step 4, and the **pooled**
-> URL as `DATABASE_URL` in Vercel (better for serverless connection limits).
+**Plan:** the blueprint uses Render's **Starter** instance (~$7/mo) because the free
+tier can't stay always-on and has no persistent disk. That's the only required cost.
 
-**3. Import the repo into Vercel** (vercel.com → Add New → Project → pick the
-repo/branch). Framework preset auto-detects **Next.js** — no extra config.
+### What happens on later deploys
+When you push a fix, Render redeploys and runs `scripts/init-db.mjs`, which:
+- applies any schema changes you shipped (`prisma db push`, additive/idempotent), and
+- **skips seeding** because the store already has data — so the owner's products,
+  prices, and photos are never overwritten.
 
-**4. Initialize the database once.** From your machine, point at the new DB and run:
-```bash
-DATABASE_URL="postgresql://…your-db…" npm run setup
-```
-This creates the tables and seeds the demo catalog, settings, and admin user.
-(To create tables **without** demo data, use `npm run db:push` instead.)
+### Backups (one file)
+The entire store is `/data/prod.db`. To back up: Render dashboard → your service →
+**Shell** → `cp /data/prod.db /tmp/ && cat …` (or use Render's disk snapshot). Keep
+a periodic copy somewhere safe; restoring is just putting the file back.
 
-**5. Set environment variables in Vercel** (Project → Settings → Environment
-Variables) — see the reference table below. At minimum:
-`DATABASE_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`,
-`NEXT_PUBLIC_SITE_URL`.
-
-**6. Deploy.** Vercel runs `npm run build` (which auto-sets the Postgres provider).
-When it's live, visit `/admin` and log in with your `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+### Uploaded photos
+Product photos uploaded via the admin go to the configured storage. On a single
+host the simplest is local-disk storage under the persistent `/data` disk; for
+durability across rebuilds you can point image storage at Vercel Blob or S3 (see
+`src/lib/storage.ts` / `.env.example`). For an alpha, local on the disk is fine.
 
 ---
 
-## Option B — Netlify
+## Option B — Vercel + Postgres (only if you want serverless / scale)
 
-Also works: Netlify auto-installs `@netlify/plugin-nextjs`. Same Postgres DB and
-the same env vars; build command `npm run build`. Vercel tends to be smoother for
-Next.js middleware/SSR, so it's the first recommendation — but Netlify is fine.
+Serverless can't use SQLite (ephemeral filesystem), so this path needs a managed
+Postgres (Neon or Vercel Postgres). More moving parts, but scales to zero and gives
+managed DB backups.
 
-## Option C — A single always-on server (VPS / Docker / Railway / Render / Fly.io)
+1. Create a Postgres DB (Neon → copy the connection string).
+2. Initialize it once: `DATABASE_URL="postgresql://…" npm run setup`.
+3. Import the repo into Vercel (auto-detects Next.js).
+4. Set the env vars (table below); `DATABASE_URL` = your Postgres URL.
+5. Deploy. The Prisma provider auto-switches to `postgresql` from the URL — no edits.
 
-On a single long-running instance with a **persistent disk**, you can keep
-**SQLite** (`DATABASE_URL="file:/data/prod.db"` on a mounted volume) *or* use
-Postgres. Typical run:
-```bash
-npm ci && npm run setup && npm run build && npm start
-```
-SQLite is single-writer, so this works for **one** instance only — don't scale it
-horizontally. For multiple instances, use Postgres.
+> If your provider gives a **pooled** and a **direct** URL (Neon/Supabase): use the
+> direct one for `npm run setup`/migrations, and the pooled one as the app's
+> `DATABASE_URL`.
+
+## Other single-host options
+Railway (volume + template) and Fly.io (volume + `fly.toml`) work the same way as
+Render — persistent disk + `DATABASE_URL="file:/data/prod.db"` + run
+`node scripts/init-db.mjs` once (or on each deploy). A plain VPS works too:
+`npm ci && DATABASE_URL=file:/data/prod.db node scripts/init-db.mjs && npm run build && npm start`.
 
 ---
 
@@ -84,46 +79,32 @@ horizontally. For multiple instances, use Postgres.
 
 | Variable | Required | What it's for |
 | --- | --- | --- |
-| `DATABASE_URL` | ✅ | Postgres URL in the cloud (`postgresql://…`); `file:./dev.db` locally |
+| `DATABASE_URL` | ✅ | `file:/data/prod.db` (SQLite on a disk) or `postgresql://…` |
 | `ADMIN_EMAIL` | ✅ | Admin login + fallback for new-order alerts |
-| `ADMIN_PASSWORD` | ✅ | Admin login password — **change from the demo** |
-| `ADMIN_SESSION_SECRET` | ✅ (prod) | Signs the admin session cookie. **The app refuses to start in production if this is missing or < 16 chars.** Generate one (below). |
-| `NEXT_PUBLIC_SITE_URL` | ✅ | Your public URL, e.g. `https://pathos-yeralis.gr` (used in emails, sitemap, JSON-LD, canonical links) |
-| `STRIPE_SECRET_KEY` | optional | Enables real card + Apple/Google Pay. Without it, checkout runs **bank transfer + demo** automatically |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | optional | Stripe client key (pairs with the secret key) |
-| `STRIPE_WEBHOOK_SECRET` | optional | Verifies Stripe webhooks |
-| `RESEND_API_KEY` | optional | Sends real email. Without it, emails are logged to the server console |
-| `EMAIL_FROM` | optional | From-address for emails |
+| `ADMIN_PASSWORD` | ✅ | Admin login — **change from the demo** |
+| `ADMIN_SESSION_SECRET` | ✅ (prod) | Signs the admin cookie. App refuses to start in prod if missing/weak. Render auto-generates it; elsewhere use `openssl rand -base64 32` |
+| `NEXT_PUBLIC_SITE_URL` | ✅ | Public HTTPS URL (emails, sitemap, JSON-LD, canonical) |
+| `STRIPE_SECRET_KEY` + `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` + `STRIPE_WEBHOOK_SECRET` | optional | Live cards + Apple/Google Pay. Without them: bank transfer + demo checkout |
+| `RESEND_API_KEY` / `EMAIL_FROM` | optional | Send real email (else logged to the server console) |
 | `ORDER_NOTIFY_EMAIL` | optional | Where new-order alerts go (defaults to `ADMIN_EMAIL`) |
-
-Generate a strong session secret:
-```bash
-openssl rand -base64 32
-# or: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-```
 
 ---
 
 ## Go-live checklist
 
-- [ ] `ADMIN_SESSION_SECRET` set to a strong random value (required in prod).
-- [ ] `ADMIN_PASSWORD` changed from the demo password.
-- [ ] `NEXT_PUBLIC_SITE_URL` set to your real HTTPS domain (admin cookies are
-      `Secure` in production, so the site must be served over HTTPS).
+- [ ] `ADMIN_PASSWORD` changed from the demo.
+- [ ] `NEXT_PUBLIC_SITE_URL` = your real HTTPS domain (admin cookies are `Secure` in prod).
 - [ ] Real bank details in `src/lib/bank.ts` (the IBAN shown at bank-transfer checkout).
-- [ ] (When ready for live cards) add Stripe keys. **Before** taking live card
-      payments, read the "deferred" note in the QA summary: the Stripe webhook
-      should be made authoritative for order creation so a dropped connection
-      after a charge can't leave a paid-but-missing order. Bank-transfer + demo
-      checkout are unaffected.
-- [ ] Optional: connect `RESEND_API_KEY` so order/shipping/owner emails actually send.
+- [ ] (When ready for **live cards**) add Stripe keys, and first make the Stripe
+      webhook authoritative for order creation — see the QA notes — so a dropped
+      connection after a charge can't leave a paid-but-missing order. Bank-transfer
+      + demo are unaffected.
+- [ ] Optional: `RESEND_API_KEY` so order/shipping/owner emails actually send.
+- [ ] Set up a periodic copy of `/data/prod.db` (your backups).
 
 ---
 
-## Updating the schema later
-
-When you change `prisma/schema.prisma`, apply it to the live DB with:
-```bash
-DATABASE_URL="postgresql://…prod…" npm run db:push
-```
-(For versioned migrations instead of `db push`, switch to `prisma migrate deploy`.)
+## Database choice, in one line
+SQLite (one file, simplest to run + back up) is the default and ideal for a single
+small-shop host. Point `DATABASE_URL` at a `postgresql://` URL anytime to switch —
+the provider auto-adapts, no code change.
