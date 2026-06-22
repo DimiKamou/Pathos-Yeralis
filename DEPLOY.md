@@ -44,10 +44,12 @@ The entire store is `/data/prod.db`. To back up: Render dashboard → your servi
 a periodic copy somewhere safe; restoring is just putting the file back.
 
 ### Uploaded photos
-Product photos uploaded via the admin go to the configured storage. On a single
-host the simplest is local-disk storage under the persistent `/data` disk; for
-durability across rebuilds you can point image storage at Vercel Blob or S3 (see
-`src/lib/storage.ts` / `.env.example`). For an alpha, local on the disk is fine.
+Handled automatically: the blueprint sets `UPLOAD_DIR=/data/uploads`, so product
+photos the owner uploads in the admin are written to the **same persistent disk**
+as the database and served via the `/media` route — they survive redeploys, no
+extra service needed. (Prefer managed object storage instead? Set `BLOB_READ_WRITE_TOKEN`
+for Vercel Blob, or the `S3_*` vars for Cloudflare R2 / Supabase / S3 — see
+`src/lib/storage.ts`. Required on serverless/Vercel, optional here.)
 
 ---
 

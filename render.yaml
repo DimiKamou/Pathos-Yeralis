@@ -31,6 +31,8 @@ services:
     envVars:
       - key: DATABASE_URL
         value: file:/data/prod.db # SQLite on the persistent disk
+      - key: UPLOAD_DIR
+        value: /data/uploads # product photos persist on the disk (served via /media)
       - key: NODE_ENV
         value: production
       - key: ADMIN_SESSION_SECRET

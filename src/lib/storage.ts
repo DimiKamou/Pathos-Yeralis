@@ -51,7 +51,15 @@ export async function putImage(filename: string, buffer: Buffer, contentType: st
     return `${base}/${key}`;
   }
 
-  // Local disk (dev only).
+  // Local disk. With UPLOAD_DIR set (e.g. a persistent disk at /data/uploads on
+  // a single-host deploy) files persist across redeploys and are served by the
+  // /media route; otherwise they go to public/uploads and are served statically
+  // (local dev).
+  if (process.env.UPLOAD_DIR) {
+    await mkdir(process.env.UPLOAD_DIR, { recursive: true });
+    await writeFile(join(process.env.UPLOAD_DIR, filename), buffer);
+    return `/media/${filename}`;
+  }
   const dir = join(process.cwd(), "public", "uploads");
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, filename), buffer);
