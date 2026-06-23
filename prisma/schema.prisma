@@ -1,0 +1,183 @@
+// PATHOS by Yeralis — alpha data model.
+// Mirrors the shapes in prototypes/pathos-store.js (the localStorage bridge)
+// so the ported UI reads the same fields. Money is stored in integer cents and
+// exposed as euro numbers at the API boundary.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // SQLite by default → zero-config, fully offline local development.
+  // For production (Vercel / Firebase App Hosting + Cloud SQL), switch this to
+  //   provider = "postgresql"
+  // and point DATABASE_URL at your Postgres instance. All column types below
+  // are portable across both, so that's the only change needed.
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Shared catalog — read by storefront + admin (was PathosStore `products`).
+model Product {
+  id         String   @id // business SKU, e.g. "PB-014"
+  name       String
+  art        String // line-art key: bracelet | necklace | earrings | ring | shell | drop
+  collection String
+  priceCents Int
+  stock      Int      @default(0)
+  status     String   @default("Active") // Active | Draft
+  sold       Int      @default(0)
+  material   String?
+  swatches   String   @default("[]") // JSON array of hex chips (portable across DBs)
+  description String?
+  imageUrl   String? // primary photo (kept for back-compat = images[0])
+  images     String   @default("[]") // JSON array of uploaded photo URLs (gallery)
+  position   Int      @default(0) // manual sort order in catalog/admin
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  orderLines OrderLine[]
+  reviews    Review[]
+}
+
+// Customer product reviews (moderated: shown on the storefront once approved).
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating    Int // 1–5
+  name      String
+  body      String
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([approved])
+}
+
+// Customer orders (was PathosStore `orders`).
+model Order {
+  id           String   @id @default(cuid())
+  number       String   @unique // human ref, e.g. "PA-2842" (shown as #PA-2842)
+  customer     String
+  email        String
+  country      String   @default("GR")
+  totalCents   Int
+  subtotalCents Int     @default(0)
+  shippingCents Int     @default(0)
+  taxCents      Int     @default(0)
+  payment      String   @default("Awaiting payment") // Paid | Awaiting payment | Refunded
+  method       String // Card | Apple Pay | Google Pay | Bank transfer
+  fulfillment  String   @default("Unfulfilled") // Unfulfilled | Shipped | Delivered
+  discountCode String?
+  discountPct  Float?
+  discountCents Int?
+  shipAddress  String?
+  shipCity     String?
+  shipZip      String?
+  trackingCarrier String?
+  trackingNumber  String?
+  note         String? // seller-only internal note (never shown to customers)
+  isGift       Boolean  @default(false)
+  giftMessage  String?
+
+  stripePaymentIntentId String? @unique
+  online       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lines OrderLine[]
+
+  @@index([createdAt])
+}
+
+model OrderLine {
+  id         String  @id @default(cuid())
+  orderId    String
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id])
+  art        String
+  name       String // includes variant suffix, e.g. "Hematite Pendant Necklace · 50 cm"
+  variant    String?
+  qty        Int
+  priceCents Int
+}
+
+// Newsletter / marketing subscribers (was PathosStore `subscribers`).
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String   @default("Footer") // Footer | Welcome popup | Checkout | Back-in-stock
+  createdAt DateTime @default(now())
+}
+
+// Live-chat / contact messages routed to the admin inbox (was `messages`).
+model Message {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String
+  topic     String   @default("General")
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// Sent / scheduled newsletter campaigns (was `campaigns`).
+model Campaign {
+  id         String   @id @default(cuid())
+  subject    String
+  name       String?
+  launch     String?
+  recipients Int      @default(0)
+  status     String   @default("Sent") // Draft | Sent
+  createdAt  DateTime @default(now())
+}
+
+// Discount codes (was the static DISCOUNTS map). checkDiscount() also honors
+// the live welcome-popup code, read from Setting("popup").
+model Discount {
+  code      String   @id // stored uppercase, e.g. "WELCOME10"
+  pct       Float    @default(0) // 0.10 = 10% off
+  label     String
+  freeShip  Boolean  @default(false)
+  active    Boolean  @default(true)
+  uses      Int      @default(0)
+  maxUses   Int?
+  expiresAt DateTime?
+}
+
+// Admin-editable storefront settings (was the localStorage bridge keys:
+// menu | popup | announcement | season). One row per key, JSON value.
+model Setting {
+  key       String   @id
+  value     String // JSON text (portable across DBs)
+  updatedAt DateTime @updatedAt
+}
+
+// Abandoned carts — captured when a shopper reaches the Payment step with valid
+// details but doesn't complete the order, so the seller can follow up manually.
+// One row per email (upserted); marked recovered when that email later orders.
+model AbandonedCart {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  itemsJson String   // JSON text: [{ name, qty }]
+  itemCount Int      @default(0)
+  valueCents Int     @default(0)
+  recovered Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recovered])
+}
+
+// Admin login (storefront checkout stays guest-first).
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+}

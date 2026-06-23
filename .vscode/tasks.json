@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Setup (create DB + seed)",
+      "type": "shell",
+      "command": "npm run setup",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run dev server",
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Start everything (setup → dev)",
+      "dependsOrder": "sequence",
+      "dependsOn": ["Setup (create DB + seed)", "Run dev server"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Postgres: start (Docker, optional)",
+      "type": "shell",
+      "command": "docker compose up -d",
+      "problemMatcher": []
+    }
+  ]
+}

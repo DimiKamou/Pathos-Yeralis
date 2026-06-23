@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Design tokens — ported verbatim from the prototype <style> blocks.
+   Light values from both storefront + admin; dark values from html.dark.
+   --c-gold is overridden at runtime when a season is active (see SeasonStyle).
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  --c-app: 246 240 230;
+  --c-paper: 255 253 248;
+  --c-ink: 42 36 30;
+  --c-mute: 156 142 124;
+  --c-steel: 171 156 135;
+  --c-gold: 177 137 78;
+  --c-sand: 236 226 210;
+  /* admin sidebar */
+  --c-side: 42 36 30;
+  --c-side-ink: 243 234 217;
+}
+
+html.dark {
+  --c-app: 21 18 15;
+  --c-paper: 38 33 28;
+  --c-ink: 240 233 220;
+  --c-mute: 160 147 129;
+  --c-steel: 150 137 119;
+  --c-gold: 201 158 96;
+  --c-sand: 58 50 42;
+  --c-side: 16 13 11;
+  --c-side-ink: 240 233 220;
+}
+
+html,
+body {
+  background: rgb(var(--c-app));
+}
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+/* admin scrollbar accents */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--c-sand));
+  border-radius: 9px;
+}
+
+/* hide scrollbar on the storefront carousel track */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ── Entry popup motion (storefront) ── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes pathos-swing {
+    0%,
+    100% {
+      transform: rotate(-3.5deg);
+    }
+    50% {
+      transform: rotate(3.5deg);
+    }
+  }
+  @keyframes pathos-floatA {
+    0%,
+    100% {
+      transform: translateY(0) scale(0.6) rotate(-6deg);
+    }
+    50% {
+      transform: translateY(-14px) scale(0.6) rotate(2deg);
+    }
+  }
+  @keyframes pathos-floatB {
+    0%,
+    100% {
+      transform: translateY(0) scale(0.58) rotate(8deg);
+    }
+    50% {
+      transform: translateY(-10px) scale(0.58) rotate(-3deg);
+    }
+  }
+  @keyframes pathos-sheen {
+    0% {
+      transform: translateX(-180%) skewX(-16deg);
+    }
+    60%,
+    100% {
+      transform: translateX(220%) skewX(-16deg);
+    }
+  }
+  .pp-swing {
+    animation: pathos-swing 4.4s ease-in-out infinite;
+    transform-origin: 50% 5px;
+  }
+  .pp-floatA {
+    animation: pathos-floatA 7s ease-in-out infinite;
+  }
+  .pp-floatB {
+    animation: pathos-floatB 8.6s ease-in-out infinite;
+  }
+  .pp-sheen {
+    animation: pathos-sheen 6s ease-in-out infinite;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-floatA,
+  .pp-floatB {
+    transform: scale(0.6);
+  }
+}

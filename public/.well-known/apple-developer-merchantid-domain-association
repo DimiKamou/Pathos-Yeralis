@@ -1,0 +1,11 @@
+REPLACE THIS FILE before enabling Apple Pay.
+
+To turn on Apple Pay in production:
+1. Stripe Dashboard -> Settings -> Payment methods -> Apple Pay -> "Add a new domain".
+2. Enter your live domain. Stripe gives you a verification file.
+3. Replace the ENTIRE contents of this file with the value Stripe provides
+   (keep the path exactly: /.well-known/apple-developer-merchantid-domain-association).
+4. Deploy. Stripe verifies the domain and Apple Pay starts appearing in Safari.
+
+Google Pay needs no file — it appears once enabled in the Stripe Dashboard and
+the site is served over HTTPS.

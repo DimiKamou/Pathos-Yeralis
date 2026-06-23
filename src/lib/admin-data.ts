@@ -1,0 +1,131 @@
+// Server-side serializers + loaders for the admin dashboard. Cents → euros,
+// dates → ISO. Reuses serializeOrderForClient + serializeProduct.
+import { prisma } from "./prisma";
+import { serializeProduct } from "./products";
+import { serializeOrderForClient, type ClientOrder } from "./order-serialize";
+import type { StoreProduct } from "./types";
+
+export interface AdminMessage {
+  id: string;
+  name: string | null;
+  email: string;
+  topic: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+export interface AdminSubscriber {
+  id: string;
+  email: string;
+  source: string;
+  createdAt: string;
+}
+export interface AdminCampaign {
+  id: string;
+  subject: string;
+  name: string | null;
+  launch: string | null;
+  recipients: number;
+  status: string;
+  createdAt: string;
+}
+export interface AdminDiscount {
+  code: string;
+  pct: number;
+  label: string;
+  freeShip: boolean;
+  active: boolean;
+  uses: number;
+  maxUses: number | null;
+  expiresAt: string | null;
+}
+export interface AdminReview {
+  id: string;
+  productId: string;
+  productName: string;
+  rating: number;
+  name: string;
+  body: string;
+  approved: boolean;
+  createdAt: string;
+}
+
+export interface AdminAbandonedCart {
+  id: string;
+  email: string;
+  itemCount: number;
+  valueEur: number;
+  items: { name: string; qty: number }[];
+  updatedAt: string;
+}
+export async function getAbandonedCarts(): Promise<AdminAbandonedCart[]> {
+  const rows = await prisma.abandonedCart.findMany({ where: { recovered: false }, orderBy: { updatedAt: "desc" } });
+  return rows.map((r) => {
+    let items: { name: string; qty: number }[] = [];
+    try { items = JSON.parse(r.itemsJson); } catch { /* ignore */ }
+    return { id: r.id, email: r.email, itemCount: r.itemCount, valueEur: r.valueCents / 100, items, updatedAt: r.updatedAt.toISOString() };
+  });
+}
+
+export async function getOrders(): Promise<ClientOrder[]> {
+  const rows = await prisma.order.findMany({ orderBy: { createdAt: "desc" }, include: { lines: true } });
+  return rows.map(serializeOrderForClient);
+}
+
+export async function getProductsAdmin(): Promise<StoreProduct[]> {
+  const rows = await prisma.product.findMany({ orderBy: [{ position: "asc" }, { createdAt: "asc" }] });
+  return rows.map(serializeProduct);
+}
+
+export async function getMessages(): Promise<AdminMessage[]> {
+  const rows = await prisma.message.findMany({ orderBy: { createdAt: "desc" } });
+  return rows.map((m) => ({
+    id: m.id,
+    name: m.name,
+    email: m.email,
+    topic: m.topic,
+    message: m.message,
+    read: m.read,
+    createdAt: m.createdAt.toISOString(),
+  }));
+}
+
+export async function getSubscribers(): Promise<AdminSubscriber[]> {
+  const rows = await prisma.subscriber.findMany({ orderBy: { createdAt: "desc" } });
+  return rows.map((s) => ({ id: s.id, email: s.email, source: s.source, createdAt: s.createdAt.toISOString() }));
+}
+
+export async function getCampaigns(): Promise<AdminCampaign[]> {
+  const rows = await prisma.campaign.findMany({ orderBy: { createdAt: "desc" } });
+  return rows.map((c) => ({
+    id: c.id,
+    subject: c.subject,
+    name: c.name,
+    launch: c.launch,
+    recipients: c.recipients,
+    status: c.status,
+    createdAt: c.createdAt.toISOString(),
+  }));
+}
+
+export async function getDiscounts(): Promise<AdminDiscount[]> {
+  const rows = await prisma.discount.findMany({ orderBy: { code: "asc" } });
+  return rows.map((d) => ({ code: d.code, pct: d.pct, label: d.label, freeShip: d.freeShip, active: d.active, uses: d.uses, maxUses: d.maxUses, expiresAt: d.expiresAt ? d.expiresAt.toISOString() : null }));
+}
+
+export async function getReviews(): Promise<AdminReview[]> {
+  const rows = await prisma.review.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { product: { select: { name: true } } },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    productId: r.productId,
+    productName: r.product?.name ?? "—",
+    rating: r.rating,
+    name: r.name,
+    body: r.body,
+    approved: r.approved,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}

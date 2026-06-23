@@ -1,0 +1,58 @@
+# Render Blueprint — one-click deploy for the PATHOS by Yeralis handoff.
+#
+# How to use (you, not the shop owner):
+#   1. Push this repo to GitHub (done).
+#   2. Render dashboard → New + → "Blueprint" → pick this repo.
+#   3. Fill the prompted values (ADMIN_EMAIL, ADMIN_PASSWORD, NEXT_PUBLIC_SITE_URL).
+#   4. Create → first deploy creates the SQLite DB on the disk and seeds it.
+#   5. Visit the URL → /admin → log in. The owner only ever uses /admin.
+#
+# Data lives in a single SQLite file on the persistent disk (/data/prod.db).
+# Back it up by downloading that file from the Render shell. To move to Postgres
+# later, just change DATABASE_URL to a postgres:// URL — the app auto-adapts.
+services:
+  - type: web
+    name: pathos-yeralis
+    runtime: node
+    plan: starter # always-on + supports a persistent disk (free tier does neither)
+    region: frankfurt # closest to a Greek audience; change if you prefer
+    # --include=dev so the Next.js build tooling (typescript/tailwind/prisma) is
+    # present even though Render sets NODE_ENV=production.
+    buildCommand: npm install --include=dev && npm run build
+    # Init runs at startup so the persistent disk is guaranteed mounted: it
+    # applies the schema and seeds ONLY when empty (idempotent on restarts),
+    # then starts the server.
+    startCommand: node scripts/init-db.mjs && npm start
+    healthCheckPath: /
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        value: file:/data/prod.db # SQLite on the persistent disk
+      - key: UPLOAD_DIR
+        value: /data/uploads # product photos persist on the disk (served via /media)
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_SESSION_SECRET
+        generateValue: true # Render generates a strong secret automatically
+      - key: ADMIN_EMAIL
+        sync: false # you set these at deploy time (not stored in the repo)
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false # your Render URL or custom domain, e.g. https://pathos-yeralis.gr
+      # Optional — leave blank to skip; the app degrades gracefully without them.
+      - key: ORDER_NOTIFY_EMAIL
+        sync: false # where new-order alerts go (defaults to ADMIN_EMAIL)
+      - key: RESEND_API_KEY
+        sync: false # set to actually send emails (else they log to the console)
+      - key: EMAIL_FROM
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false # set to enable live cards/wallets (else bank-transfer + demo)
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
