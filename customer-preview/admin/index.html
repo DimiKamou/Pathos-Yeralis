@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PATHOS Admin — read-only demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      colors: { paper:'#f6f0e6', card:'#fffdf8', ink:'#2a241e', mute:'#9c8e7c', gold:'#b1894e', sand:'#ece2d2', line:'#e8dfcd', side:'#241f1a', sideink:'#f3ead9' },
+      fontFamily: { serif:['"Cormorant Garamond"','Georgia','serif'], sans:['Jost','system-ui','sans-serif'] },
+    } },
+  };
+</script>
+<style> body{font-family:'Jost',system-ui,sans-serif;-webkit-font-smoothing:antialiased} .serif{font-family:'Cormorant Garamond',serif} </style>
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="pathos-store.js"></script>
+</head>
+<body class="bg-paper text-ink">
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+const S = window.PathosStore;
+const PRODUCTS = S.defaults.products;
+const MESSAGES = S.defaults.messages;
+const SUBSCRIBERS = S.defaults.subscribers;
+const CAMPAIGNS = S.defaults.campaigns;
+const SEASONS = S.SEASONS;
+const DISCOUNTS = S.DISCOUNTS;
+const eur = (n) => '€' + Number(n).toFixed(2);
+
+// Sample orders for the demo (the live app stores these in the database).
+const ORDERS = [
+  { id:'#PA-3471', customer:'Eleni Markou',    email:'eleni.m@example.com',   country:'Greece',      date:'12 Jun', items:2, total:132, payment:'Paid',     fulfillment:'Unfulfilled', method:'Card',
+    lines:[['Hematite Pendant Necklace','45 cm',1,80],['Spiral Shell Pendant','',1,36]] },
+  { id:'#PA-3468', customer:'Marco Bianchi',   email:'marco.b@example.it',    country:'Italy',       date:'11 Jun', items:1, total:80,  payment:'Awaiting', fulfillment:'Unfulfilled', method:'Bank transfer',
+    lines:[['Hematite Pendant Necklace','50 cm',1,80]] },
+  { id:'#PA-3465', customer:'Chloe Dubois',    email:'chloe.d@example.fr',    country:'France',      date:'10 Jun', items:3, total:154, payment:'Paid',     fulfillment:'Shipped',     method:'Card',
+    lines:[['Coral Drop Earrings','',1,45],['Olive Branch Choker','45 cm',1,58],['Lava Stone Wrap','M',1,34]] },
+  { id:'#PA-3460', customer:'Sofia Andersen',  email:'s.andersen@example.de', country:'Germany',     date:'8 Jun',  items:1, total:45,  payment:'Paid',     fulfillment:'Fulfilled',   method:'Apple Pay',
+    lines:[['Coral Drop Earrings','',1,45]] },
+  { id:'#PA-3457', customer:'Yara Haddad',     email:'yara.h@example.nl',     country:'Netherlands', date:'6 Jun',  items:2, total:94,  payment:'Paid',     fulfillment:'Shipped',     method:'Card',
+    lines:[['Paua Teardrop Pendant','',1,42],['Aegean Beaded Bracelet','M',1,52]] },
+  { id:'#PA-3451', customer:'Niamh Byrne',     email:'niamh.b@example.ie',    country:'Ireland',     date:'3 Jun',  items:1, total:58,  payment:'Refunded', fulfillment:'Cancelled',   method:'Card',
+    lines:[['Olive Branch Choker','40 cm',1,58]] },
+];
+
+const TONES = {
+  green:'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  amber:'bg-amber-50 text-amber-700 ring-amber-200',
+  blue:'bg-sky-50 text-sky-700 ring-sky-200',
+  rose:'bg-rose-50 text-rose-600 ring-rose-200',
+  mute:'bg-sand text-mute ring-line',
+  gold:'bg-gold/10 text-gold ring-gold/30',
+};
+const PAY_TONE = { Paid:'green', Awaiting:'amber', Refunded:'rose' };
+const FUL_TONE = { Unfulfilled:'mute', Shipped:'blue', Fulfilled:'green', Cancelled:'rose' };
+function Chip({ tone='mute', children }) {
+  return <span className={'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ring-1 '+TONES[tone]}>{children}</span>;
+}
+
+function Icon({ d, size=18 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
+}
+const ICONS = {
+  dashboard:<g><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></g>,
+  orders:<g><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h7M9 16h7M9 8h3"/></g>,
+  products:<g><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/></g>,
+  inventory:<g><path d="M4 7h16v13H4z"/><path d="M4 7l2-4h12l2 4M9 11h6"/></g>,
+  messages:<g><path d="M4 5h16v12H8l-4 3z"/></g>,
+  subscribers:<g><path d="M16 19a4 4 0 0 0-8 0"/><circle cx="12" cy="9" r="3.2"/></g>,
+  discounts:<g><path d="M4 9l8-5 8 5-8 5z"/><path d="M4 9v6l8 5 8-5V9"/></g>,
+  settings:<g><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2 2M16.4 16.4l2 2M18.4 5.6l-2 2M7.6 16.4l-2 2"/></g>,
+};
+const NAV = [
+  ['dashboard','Dashboard'], ['orders','Orders'], ['products','Products'], ['inventory','Inventory'],
+  ['messages','Messages'], ['subscribers','Subscribers'], ['discounts','Discounts'], ['settings','Settings'],
+];
+
+function StatCard({ label, value, sub }) {
+  return (
+    <div className="rounded-xl border border-line bg-card p-5">
+      <div className="text-[11px] uppercase tracking-[0.16em] text-mute">{label}</div>
+      <div className="mt-1.5 serif text-[32px] leading-none text-ink">{value}</div>
+      {sub && <div className="mt-1.5 text-[12px] text-mute">{sub}</div>}
+    </div>
+  );
+}
+function Th({ children, className='' }) { return <th className={'px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.14em] text-mute '+className}>{children}</th>; }
+function Td({ children, className='' }) { return <td className={'px-4 py-3 text-[13px] text-ink '+className}>{children}</td>; }
+function Panel({ title, children, right }) {
+  return (
+    <div className="rounded-xl border border-line bg-card">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <h3 className="serif text-[20px] text-ink">{title}</h3>{right}
+      </div>
+      {children}
+    </div>
+  );
+}
+const Dot = ({ c }) => <span className="inline-block h-6 w-6 rounded-md ring-1 ring-black/10" style={{ background:c }}></span>;
+
+// ---- Views ----
+function Dashboard({ go }) {
+  const revenue = ORDERS.filter(o=>o.payment==='Paid').reduce((s,o)=>s+o.total,0);
+  const awaiting = ORDERS.filter(o=>o.payment==='Awaiting').length;
+  const low = PRODUCTS.filter(p=>p.status==='Active' && p.stock>0 && p.stock<10);
+  const out = PRODUCTS.filter(p=>p.stock===0 && p.status==='Active');
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard label="Revenue · June" value={eur(revenue)} sub={ORDERS.filter(o=>o.payment==='Paid').length+' paid orders'} />
+        <StatCard label="Orders" value={ORDERS.length} sub={awaiting+' awaiting payment'} />
+        <StatCard label="Low / out of stock" value={low.length+out.length} sub={out.length+' sold out'} />
+        <StatCard label="Subscribers" value={SUBSCRIBERS.length} sub="newsletter list" />
+      </div>
+      <Panel title="Recent orders" right={<button onClick={()=>go('orders')} className="text-[12px] text-gold hover:underline">View all</button>}>
+        <table className="w-full">
+          <thead><tr className="border-b border-line"><Th>Order</Th><Th>Customer</Th><Th>Total</Th><Th>Payment</Th><Th>Fulfilment</Th></tr></thead>
+          <tbody>
+            {ORDERS.slice(0,5).map(o=>(
+              <tr key={o.id} className="border-b border-line/70">
+                <Td className="font-medium">{o.id}</Td><Td>{o.customer}</Td><Td>{eur(o.total)}</Td>
+                <Td><Chip tone={PAY_TONE[o.payment]}>{o.payment}</Chip></Td>
+                <Td><Chip tone={FUL_TONE[o.fulfillment]}>{o.fulfillment}</Chip></Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Panel>
+      <Panel title="Needs attention">
+        <div className="p-5 text-[13px] text-ink">
+          {awaiting>0 && <div className="mb-2">• <b>{awaiting}</b> order awaiting a bank transfer.</div>}
+          {out.map(p=><div key={p.id} className="mb-2">• <b>{p.name}</b> is sold out — consider restocking or hiding.</div>)}
+          {low.map(p=><div key={p.id} className="mb-2">• <b>{p.name}</b> is low ({p.stock} left).</div>)}
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function Orders() {
+  const [sel, setSel] = useState(null);
+  return (
+    <div className="grid gap-5 lg:grid-cols-[1.7fr_1fr]">
+      <Panel title="Orders">
+        <table className="w-full">
+          <thead><tr className="border-b border-line"><Th>Order</Th><Th>Customer</Th><Th>Date</Th><Th>Total</Th><Th>Payment</Th><Th>Fulfilment</Th></tr></thead>
+          <tbody>
+            {ORDERS.map(o=>(
+              <tr key={o.id} onClick={()=>setSel(o)} className={'cursor-pointer border-b border-line/70 hover:bg-sand/50 '+(sel&&sel.id===o.id?'bg-sand/70':'')}>
+                <Td className="font-medium">{o.id}</Td><Td>{o.customer}<div className="text-[11px] text-mute">{o.country}</div></Td>
+                <Td className="text-mute">{o.date}</Td><Td>{eur(o.total)}</Td>
+                <Td><Chip tone={PAY_TONE[o.payment]}>{o.payment}</Chip></Td>
+                <Td><Chip tone={FUL_TONE[o.fulfillment]}>{o.fulfillment}</Chip></Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Panel>
+      <div className="rounded-xl border border-line bg-card p-5">
+        {sel ? (
+          <div>
+            <div className="flex items-center justify-between"><h3 className="serif text-[22px]">{sel.id}</h3><Chip tone={PAY_TONE[sel.payment]}>{sel.payment}</Chip></div>
+            <div className="mt-1 text-[13px] text-mute">{sel.customer} · {sel.email}</div>
+            <div className="mt-0.5 text-[12px] text-mute">{sel.country} · {sel.date} · {sel.method}</div>
+            <div className="mt-4 divide-y divide-line border-y border-line">
+              {sel.lines.map((l,i)=>(
+                <div key={i} className="flex justify-between py-2.5 text-[13px]"><span>{l[0]}{l[1]&&<span className="text-mute"> · {l[1]}</span>} <span className="text-mute">×{l[2]}</span></span><span>{eur(l[3]*l[2])}</span></div>
+              ))}
+            </div>
+            <div className="mt-3 flex justify-between text-[14px] font-medium"><span>Total</span><span className="text-gold">{eur(sel.total)}</span></div>
+            <button title="Demo — disabled" className="mt-5 w-full cursor-not-allowed rounded-full bg-ink/90 py-2.5 text-[11.5px] uppercase tracking-[0.16em] text-paper opacity-70">Mark as fulfilled</button>
+          </div>
+        ) : <div className="grid h-full place-items-center py-16 text-center text-[13px] text-mute">Select an order to see its detail.</div>}
+      </div>
+    </div>
+  );
+}
+
+function Products() {
+  return (
+    <Panel title="Products" right={<button title="Demo — disabled" className="cursor-not-allowed rounded-full bg-ink/90 px-4 py-1.5 text-[11px] uppercase tracking-[0.14em] text-paper opacity-70">+ New product</button>}>
+      <table className="w-full">
+        <thead><tr className="border-b border-line"><Th></Th><Th>Name</Th><Th>Collection</Th><Th>Price</Th><Th>Sold</Th><Th>Stock</Th><Th>Status</Th></tr></thead>
+        <tbody>
+          {PRODUCTS.map(p=>(
+            <tr key={p.id} className="border-b border-line/70 hover:bg-sand/40">
+              <Td><Dot c={p.swatches[0]} /></Td>
+              <Td className="font-medium">{p.name}<div className="text-[11px] text-mute">{p.id} · {p.material}</div></Td>
+              <Td className="text-mute">{p.collection}</Td><Td>{eur(p.price)}</Td><Td className="text-mute">{p.sold}</Td>
+              <Td>{p.stock===0 ? <span className="text-rose-500">0</span> : p.stock<10 ? <span className="text-amber-600">{p.stock}</span> : p.stock}</Td>
+              <Td><Chip tone={p.status==='Active'?'green':'mute'}>{p.status}</Chip></Td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Panel>
+  );
+}
+
+function Inventory() {
+  return (
+    <Panel title="Inventory">
+      <table className="w-full">
+        <thead><tr className="border-b border-line"><Th>Piece</Th><Th>Collection</Th><Th className="w-1/3">Stock level</Th><Th>Units</Th></tr></thead>
+        <tbody>
+          {PRODUCTS.map(p=>{
+            const pct = Math.min(100, Math.round(p.stock/60*100));
+            const tone = p.stock===0?'bg-rose-400':p.stock<10?'bg-amber-400':'bg-emerald-400';
+            return (
+              <tr key={p.id} className="border-b border-line/70">
+                <Td className="font-medium">{p.name}</Td><Td className="text-mute">{p.collection}</Td>
+                <Td><div className="h-2 w-full rounded-full bg-sand"><div className={'h-2 rounded-full '+tone} style={{width:Math.max(4,pct)+'%'}}></div></div></Td>
+                <Td>{p.stock===0?<span className="text-rose-500">Sold out</span>:p.stock}</Td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Panel>
+  );
+}
+
+function Messages() {
+  const [items, setItems] = useState(MESSAGES.map(m=>({...m})));
+  const [openId, setOpenId] = useState(null);
+  const open = (m)=>{ setOpenId(m.id); setItems(items.map(x=>x.id===m.id?{...x,read:true}:x)); };
+  return (
+    <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
+      <Panel title="Inbox">
+        <div className="divide-y divide-line">
+          {items.map(m=>(
+            <button key={m.id} onClick={()=>open(m)} className={'flex w-full items-start gap-3 px-5 py-3.5 text-left hover:bg-sand/40 '+(openId===m.id?'bg-sand/60':'')}>
+              <span className={'mt-1.5 h-2 w-2 shrink-0 rounded-full '+(m.read?'bg-transparent':'bg-gold')}></span>
+              <span className="min-w-0 flex-1">
+                <span className="flex justify-between"><span className={'text-[13.5px] '+(m.read?'text-ink':'font-semibold text-ink')}>{m.name}</span><span className="text-[11px] text-mute">{m.topic}</span></span>
+                <span className="mt-0.5 block truncate text-[12px] text-mute">{m.message}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </Panel>
+      <div className="rounded-xl border border-line bg-card p-6">
+        {openId ? (()=>{ const m=items.find(x=>x.id===openId); return (
+          <div>
+            <h3 className="serif text-[22px]">{m.name}</h3>
+            <div className="text-[12px] text-mute">{m.email} · {m.topic}</div>
+            <p className="mt-4 text-[14px] leading-relaxed text-ink">{m.message}</p>
+            <div className="mt-5 flex gap-2">
+              <input placeholder="Write a reply…" className="flex-1 rounded-lg border border-line bg-paper px-3 py-2 text-[13px]" />
+              <button title="Demo — disabled" className="cursor-not-allowed rounded-lg bg-ink/90 px-4 text-[12px] text-paper opacity-70">Send</button>
+            </div>
+          </div>
+        ); })() : <div className="grid h-full place-items-center py-16 text-center text-[13px] text-mute">Open a message to read it.</div>}
+      </div>
+    </div>
+  );
+}
+
+function Subscribers() {
+  return (
+    <Panel title="Subscribers" right={<button title="Demo — disabled" className="cursor-not-allowed rounded-full border border-line px-4 py-1.5 text-[11px] uppercase tracking-[0.14em] text-mute opacity-70">Export CSV</button>}>
+      <table className="w-full">
+        <thead><tr className="border-b border-line"><Th>Email</Th><Th>Source</Th></tr></thead>
+        <tbody>{SUBSCRIBERS.map(s=>(<tr key={s.id} className="border-b border-line/70"><Td>{s.email}</Td><Td className="text-mute">{s.source}</Td></tr>))}</tbody>
+      </table>
+    </Panel>
+  );
+}
+
+function Discounts() {
+  const rows = Object.keys(DISCOUNTS).map(c=>({code:c, label:DISCOUNTS[c].label})).concat([{code:'AEGEAN15', label:'15% off (welcome popup)'}]);
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {rows.map(d=>(
+        <div key={d.code} className="rounded-xl border border-line bg-card p-5">
+          <div className="flex items-center justify-between">
+            <span className="serif text-[22px] tracking-wide text-ink">{d.code}</span>
+            <Chip tone="gold">Active</Chip>
+          </div>
+          <div className="mt-1 text-[13px] text-mute">{d.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Settings() {
+  const [season, setSeason] = useState('none');
+  return (
+    <div className="space-y-6">
+      <Panel title="Seasonal theme">
+        <div className="p-5">
+          <p className="mb-4 text-[13px] text-mute">Switch the storefront's accent for a season — or let it change automatically by date.</p>
+          <div className="flex flex-wrap gap-3">
+            {Object.keys(SEASONS).map(k=>{ const s=SEASONS[k]; return (
+              <button key={k} onClick={()=>setSeason(k)} className={'flex items-center gap-2.5 rounded-full border px-4 py-2 text-[12.5px] '+(season===k?'border-ink bg-sand':'border-line hover:border-mute')}>
+                <span className="h-4 w-4 rounded-full ring-1 ring-black/10" style={{background:s.hex}}></span>{s.label}
+              </button>
+            ); })}
+          </div>
+          <label className="mt-4 flex items-center gap-2 text-[12.5px] text-mute"><input type="checkbox" className="accent-gold" /> Switch automatically by date</label>
+        </div>
+      </Panel>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Announcement bar">
+          <div className="p-5">
+            <textarea readOnly className="h-20 w-full resize-none rounded-lg border border-line bg-paper p-3 text-[13px] text-ink">FREE SHIPPING ACROSS GREECE & THE EU FOR ORDERS ABOVE 100€</textarea>
+          </div>
+        </Panel>
+        <Panel title="Welcome popup">
+          <div className="space-y-2.5 p-5 text-[13px]">
+            <div><span className="text-mute">Heading: </span>The Summer Edit is here</div>
+            <div><span className="text-mute">Code: </span><span className="serif text-[18px] text-gold">AEGEAN15</span></div>
+            <div><span className="text-mute">Appears: </span>after 1.2s, once per session</div>
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+const VIEWS = { dashboard:Dashboard, orders:Orders, products:Products, inventory:Inventory, messages:Messages, subscribers:Subscribers, discounts:Discounts, settings:Settings };
+
+function App() {
+  const [view, setView] = useState('dashboard');
+  const Current = VIEWS[view];
+  const title = (NAV.find(n=>n[0]===view)||['','Dashboard'])[1];
+  return (
+    <div className="min-h-screen">
+      {/* Sidebar */}
+      <aside className="fixed inset-y-0 left-0 w-60 bg-side text-sideink">
+        <div className="px-6 py-6">
+          <div className="serif text-[24px] tracking-[0.16em]">PATHOS</div>
+          <div className="text-[9px] uppercase tracking-[0.34em] text-sideink/55">Admin</div>
+        </div>
+        <nav className="mt-2 px-3">
+          {NAV.map(([key,label])=>(
+            <button key={key} onClick={()=>setView(key)}
+              className={'mb-0.5 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] transition-colors '+(view===key?'bg-white/10 text-gold':'text-sideink/75 hover:bg-white/5 hover:text-sideink')}>
+              <Icon d={ICONS[key]} size={17} />{label}
+            </button>
+          ))}
+        </nav>
+        <div className="absolute bottom-0 left-0 right-0 px-6 py-5 text-[11px] text-sideink/45">Signed in as Yeralis K.</div>
+      </aside>
+
+      {/* Main */}
+      <main className="ml-60">
+        <div className="flex items-center justify-between border-b border-line bg-paper/80 px-8 py-5 backdrop-blur">
+          <h1 className="serif text-[30px] text-ink">{title}</h1>
+          <span className="rounded-full border border-gold/40 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-gold">Read-only demo</span>
+        </div>
+        <div className="p-8"><Current go={setView} /></div>
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
